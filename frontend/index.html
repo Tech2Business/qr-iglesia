@@ -17,6 +17,41 @@
     #headerLeido:hover {
       background: rgba(16, 185, 129, 0.08) !important;
     }
+    
+    /* Estilos interactivos para las tarjetas de estadísticas */
+    .stat-card {
+      cursor: pointer;
+      user-select: none;
+      transition: var(--transition-smooth);
+      position: relative;
+    }
+    .stat-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 25px -5px rgba(0, 0, 0, 0.5);
+      border-color: rgba(255, 255, 255, 0.15) !important;
+    }
+    
+    /* Efecto de borde y resplandor activo personalizado por tipo */
+    .stat-card.active-filter {
+      border-color: var(--accent-gold) !important;
+      background: rgba(217, 119, 6, 0.08) !important;
+      box-shadow: 0 0 15px rgba(217, 119, 6, 0.15);
+    }
+    .stat-card.success.active-filter {
+      border-color: var(--color-success) !important;
+      background: rgba(16, 185, 129, 0.08) !important;
+      box-shadow: 0 0 15px rgba(16, 185, 129, 0.15);
+    }
+    .stat-card.danger.active-filter {
+      border-color: var(--color-danger) !important;
+      background: rgba(239, 68, 68, 0.08) !important;
+      box-shadow: 0 0 15px rgba(239, 68, 68, 0.15);
+    }
+    .stat-card.warning.active-filter {
+      border-color: var(--color-warning) !important;
+      background: rgba(245, 158, 11, 0.08) !important;
+      box-shadow: 0 0 15px rgba(245, 158, 11, 0.15);
+    }
   </style>
   
   <!-- Lógica de Negocio y Controladores -->
@@ -65,19 +100,19 @@
 
     <!-- Tarjetas de Estadísticas en Tiempo Real -->
     <section class="stats-grid">
-      <div class="glass-card stat-card">
+      <div class="glass-card stat-card active-filter" id="cardTotal">
         <div class="stat-label">Inscritos Totales</div>
         <div class="stat-value" id="statTotal">0</div>
       </div>
-      <div class="glass-card stat-card success">
+      <div class="glass-card stat-card success" id="cardPagados">
         <div class="stat-label">Pagados</div>
         <div class="stat-value" id="statPagados">0</div>
       </div>
-      <div class="glass-card stat-card danger">
+      <div class="glass-card stat-card danger" id="cardPendientes">
         <div class="stat-label">Pendientes de Pago</div>
         <div class="stat-value" id="statPendientes">0</div>
       </div>
-      <div class="glass-card stat-card warning">
+      <div class="glass-card stat-card warning" id="cardPresentes">
         <div class="stat-label">Confirmados (Entraron)</div>
         <div class="stat-value" id="statPresentes">0</div>
       </div>

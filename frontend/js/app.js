@@ -77,7 +77,45 @@ function inicializarUI() {
   if (searchInput) searchInput.addEventListener("input", aplicarFiltrosYRenderizar);
 
   const filterStatus = document.getElementById("filterStatus");
-  if (filterStatus) filterStatus.addEventListener("change", aplicarFiltrosYRenderizar);
+  
+  // Referencias a tarjetas de estadísticas
+  const cardTotal = document.getElementById("cardTotal");
+  const cardPagados = document.getElementById("cardPagados");
+  const cardPendientes = document.getElementById("cardPendientes");
+  const cardPresentes = document.getElementById("cardPresentes");
+
+  const actualizarTarjetasActivas = (valorFiltro) => {
+    [cardTotal, cardPagados, cardPendientes, cardPresentes].forEach(c => {
+      if (c) c.classList.remove("active-filter");
+    });
+    
+    if (valorFiltro === "TODOS" && cardTotal) cardTotal.classList.add("active-filter");
+    if (valorFiltro === "PAGADOS" && cardPagados) cardPagados.classList.add("active-filter");
+    if (valorFiltro === "PENDIENTES" && cardPendientes) cardPendientes.classList.add("active-filter");
+    if (valorFiltro === "PRESENTES" && cardPresentes) cardPresentes.classList.add("active-filter");
+  };
+
+  const seleccionarFiltroRapido = (tarjeta, valor) => {
+    if (filterStatus) {
+      filterStatus.value = valor;
+    }
+    actualizarTarjetasActivas(valor);
+    aplicarFiltrosYRenderizar();
+  };
+
+  // Click en las tarjetas de estadísticas
+  if (cardTotal) cardTotal.addEventListener("click", () => seleccionarFiltroRapido(cardTotal, "TODOS"));
+  if (cardPagados) cardPagados.addEventListener("click", () => seleccionarFiltroRapido(cardPagados, "PAGADOS"));
+  if (cardPendientes) cardPendientes.addEventListener("click", () => seleccionarFiltroRapido(cardPendientes, "PENDIENTES"));
+  if (cardPresentes) cardPresentes.addEventListener("click", () => seleccionarFiltroRapido(cardPresentes, "PRESENTES"));
+
+  // Cambio manual del SELECT
+  if (filterStatus) {
+    filterStatus.addEventListener("change", () => {
+      actualizarTarjetasActivas(filterStatus.value);
+      aplicarFiltrosYRenderizar();
+    });
+  }
 
   // Configurar colapso de Asistencia Leída
   const headerLeido = document.getElementById("headerLeido");
@@ -241,7 +279,7 @@ function integrarYMostrar() {
       esposoTelefono: infoMapeada.esposoTelefono,
       esposaNombre: infoMapeada.esposaNombre,
       esposaTelefono: infoMapeada.esposaTelefono,
-      telefono: infoMapeada.telefono,
+      telefono: infoMapeada.esposoTelefono || infoMapeada.esposaTelefono || "",
       email: infoMapeada.email,
       pagado: infoMapeada.pagado,
       valorPago: infoMapeada.valorPago,
@@ -400,11 +438,21 @@ function filtrarDatos() {
   const filterVal = document.getElementById("filterStatus").value;
 
   return listaIntegrada.filter(item => {
-    // 1. Filtrar por término de búsqueda
-    const matchSearch = item.nombre.toLowerCase().includes(query) || 
-                        item.telefono.includes(query) || 
-                        item.email.toLowerCase().includes(query) ||
-                        item.detallesAdicionales.toLowerCase().includes(query);
+    // 1. Filtrar por término de búsqueda (buscando en nombres individuales, teléfonos y correos para ser robustos)
+    const nombreMatch = item.nombre ? item.nombre.toLowerCase().includes(query) : false;
+    const esposoNombreMatch = item.esposoNombre ? item.esposoNombre.toLowerCase().includes(query) : false;
+    const esposaNombreMatch = item.esposaNombre ? item.esposaNombre.toLowerCase().includes(query) : false;
+    
+    const esposoTelMatch = item.esposoTelefono ? item.esposoTelefono.includes(query) : false;
+    const esposaTelMatch = item.esposaTelefono ? item.esposaTelefono.includes(query) : false;
+    const telMatch = item.telefono ? item.telefono.includes(query) : false;
+    
+    const emailMatch = item.email ? item.email.toLowerCase().includes(query) : false;
+    const detallesMatch = item.detallesAdicionales ? item.detallesAdicionales.toLowerCase().includes(query) : false;
+
+    const matchSearch = nombreMatch || esposoNombreMatch || esposaNombreMatch || 
+                        esposoTelMatch || esposaTelMatch || telMatch || 
+                        emailMatch || detallesMatch;
     
     // 2. Filtrar por estado de asistencia y pago
     let matchStatus = true;
