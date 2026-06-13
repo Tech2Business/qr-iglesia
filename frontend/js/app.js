@@ -189,19 +189,8 @@ async function cargarDatos() {
 function integrarYMostrar() {
   listaIntegrada = [];
 
-  // Mapeo rápido de la hoja "qr" agrupado por número de fila de inscripción
-  const mapaQR = {};
-  asistenciasRaw.forEach(reg => {
-    const fila = reg.filaInscripcion;
-    if (!mapaQR[fila]) {
-      mapaQR[fila] = [];
-    }
-    mapaQR[fila].push(reg);
-  });
-
   inscritosRaw.forEach(persona => {
     const fila = persona.fila;
-    const historiales = mapaQR[fila] || [];
     
     // Encontrar nombres, teléfonos y pago analizando cabeceras dinámicamente
     const infoMapeada = mapearCamposDinamicos(persona);
@@ -217,6 +206,20 @@ function integrarYMostrar() {
     const esposoNombreNorm = normalizar(infoMapeada.esposoNombre);
     const esposaNombreNorm = normalizar(infoMapeada.esposaNombre);
     const nombreGenNorm = normalizar(infoMapeada.nombre);
+
+    // Filtrar de asistenciasRaw los historiales correspondientes a esta persona/matrimonio (coincidencia por nombre o por fila como fallback)
+    const historiales = asistenciasRaw.filter(reg => {
+      // Caso 1: Coincide por número de fila
+      if (reg.filaInscripcion === fila) return true;
+      
+      const regNombreNorm = normalizar(reg.nombre);
+      if (!regNombreNorm) return false;
+      
+      // Caso 2: Coincide con cualquiera de los nombres del inscrito
+      return (esposoNombreNorm && (regNombreNorm === esposoNombreNorm || regNombreNorm.includes(esposoNombreNorm) || esposoNombreNorm.includes(regNombreNorm))) ||
+             (esposaNombreNorm && (regNombreNorm === esposaNombreNorm || regNombreNorm.includes(esposaNombreNorm) || esposaNombreNorm.includes(regNombreNorm))) ||
+             (nombreGenNorm && (regNombreNorm === nombreGenNorm || regNombreNorm.includes(nombreGenNorm) || nombreGenNorm.includes(regNombreNorm)));
+    });
 
     // Buscar registros de tipo "ASISTENCIA"
     const registroAsistencia = historiales.find(h => h.estado === "ASISTENCIA");

@@ -181,14 +181,16 @@ async function validarQR(textoQR) {
       if (coincideNombre) {
         encontrado = candidato;
       } else {
-        console.warn(`Verificación fallida: Fila ${filaQR} en DB pertenece a otro nombre.`);
+        console.warn(`Verificación por fila fallida: Fila ${filaQR} en DB pertenece a otro nombre. Buscando por nombre...`);
       }
     }
-  } else {
-    // Fallback: Si no tiene formato estructurado, buscamos coincidencia difusa del texto completo en la base de datos
-    const textoQRNorm = normalizar(textoQR);
+  }
+
+  // Si no se encontró por fila (o la fila pertenece a otra persona debido a desplazamientos de filas)
+  if (!encontrado) {
+    const textoQRNorm = normalizar(nombreQR || textoQR);
     
-    // Buscamos coincidencia en cualquier columna que contenga nombre
+    // Buscamos coincidencia en cualquier columna que contenga nombre en todo el listado
     const regexNombreKey = /nombre|completo|esposo|esposa/i;
     for (let i = 0; i < listaInscritos.length; i++) {
       const item = listaInscritos[i];
@@ -222,11 +224,32 @@ async function validarQR(textoQR) {
   // 2. Determinar Estado y Mostrar Resultados
   if (encontrado) {
     // Buscar si ya marcó asistencia esta persona específica en la lista local de asistencias
-    const yaAsistio = listaAsistencias.some(a => 
-      a.filaInscripcion === encontrado.fila && 
-      a.estado === "ASISTENCIA" && 
-      normalizar(a.nombre) === normalizar(nombreEncontradoMatch)
-    );
+    const matchAsistencia = (a) => {
+      if (a.estado !== "ASISTENCIA") return false;
+      
+      const aNombreNorm = normalizar(a.nombre);
+      const targetNombreNorm = normalizar(nombreEncontradoMatch);
+      
+      // Caso 1: Coincidencia exacta o parcial de nombres
+      if (aNombreNorm && targetNombreNorm && (aNombreNorm === targetNombreNorm || aNombreNorm.includes(targetNombreNorm) || targetNombreNorm.includes(aNombreNorm))) {
+        return true;
+      }
+      
+      // Caso 2: Coincide con cualquiera de los nombres del inscrito (Esposo, Esposa o Nombre completo)
+      const infoMapeada = mapearDetallesVisuales(encontrado);
+      const esposoNorm = normalizar(infoMapeada.esposoNombre);
+      const esposaNorm = normalizar(infoMapeada.esposaNombre);
+      const nombreGenNorm = normalizar(infoMapeada.nombre);
+      
+      if (esposoNorm && aNombreNorm && (aNombreNorm === esposoNorm || aNombreNorm.includes(esposoNorm) || esposoNorm.includes(aNombreNorm))) return true;
+      if (esposaNorm && aNombreNorm && (aNombreNorm === esposaNorm || aNombreNorm.includes(esposaNorm) || esposaNorm.includes(aNombreNorm))) return true;
+      if (nombreGenNorm && aNombreNorm && (aNombreNorm === nombreGenNorm || aNombreNorm.includes(nombreGenNorm) || nombreGenNorm.includes(aNombreNorm))) return true;
+      
+      // Caso 3: Fallback por número de fila de inscripción
+      return a.filaInscripcion === encontrado.fila;
+    };
+
+    const yaAsistio = listaAsistencias.some(matchAsistencia);
     
     // Obtener campos adicionales dinámicos para mostrar en la tarjeta de éxito
     const infoMapeada = mapearDetallesVisuales(encontrado);
@@ -235,11 +258,7 @@ async function validarQR(textoQR) {
       // ⚠️ ADVERTENCIA: YA INGRESÓ ANTERIORMENTE
       playAudio("audioFail");
       
-      const registroAnterior = listaAsistencias.find(a => 
-        a.filaInscripcion === encontrado.fila && 
-        a.estado === "ASISTENCIA" && 
-        normalizar(a.nombre) === normalizar(nombreEncontradoMatch)
-      );
+      const registroAnterior = listaAsistencias.find(matchAsistencia);
       
       const fechaHoraIngreso = registroAnterior ? formatearFechaHora(registroAnterior.fecha) : "Fecha no disponible";
       
