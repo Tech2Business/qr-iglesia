@@ -380,258 +380,289 @@ function aplicarFiltrosYRenderizar() {
   renderizarTabla(filtrados);
 }
 
-function renderizarTabla(lista) {
-  const tbody = document.getElementById("tablaCuerpo");
-  const emptyState = document.getElementById("emptyState");
-  tbody.innerHTML = "";
+/**
+ * Crea la fila HTML (tr) correspondiente para cada registro con su respectivo contenido
+ */
+function crearFilaHTML(item) {
+  const tr = document.createElement("tr");
+  
+  // Columna 1: Datos de la Persona
+  let innerDetails = "";
+  if (item.email) innerDetails += `<span><i class="far fa-envelope"></i> ${item.email}</span>`;
+  if (item.detallesAdicionales) innerDetails += `<span style="opacity: 0.85;"> | ${item.detallesAdicionales}</span>`;
 
-  if (lista.length === 0) {
-    emptyState.classList.remove("hidden");
-    return;
+  // Badge visual del Estado del Pago
+  let badgePago = item.pagado 
+    ? `<span class="badge badge-success" style="font-size: 0.65rem; padding: 0.15rem 0.5rem;"><i class="fas fa-check-double"></i> Pagado</span>`
+    : `<span class="badge badge-danger" style="font-size: 0.65rem; padding: 0.15rem 0.5rem;"><i class="fas fa-exclamation-triangle"></i> Pendiente</span>`;
+
+  let infoContacto = "";
+  if (item.esposoNombre && item.esposoTelefono) {
+    infoContacto += `<span><i class="fab fa-whatsapp text-success"></i> <strong>Esposo:</strong> ${item.esposoTelefono} (${item.esposoNombre})</span> `;
   }
-  emptyState.classList.add("hidden");
+  if (item.esposaNombre && item.esposaTelefono) {
+    if (infoContacto) infoContacto += `<br/>`;
+    infoContacto += `<span><i class="fab fa-whatsapp text-success"></i> <strong>Esposa:</strong> ${item.esposaTelefono} (${item.esposaNombre})</span>`;
+  }
+  if (!infoContacto) {
+    infoContacto = `<span><i class="fab fa-whatsapp text-success"></i> ${item.telefono || 'Sin teléfono'}</span>`;
+  }
 
-  lista.forEach(item => {
-    const tr = document.createElement("tr");
+  const tdPersona = `
+    <td>
+      <div class="person-info-cell">
+        <div class="person-name" style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+          ${item.nombre} ${badgePago}
+        </div>
+        <div class="person-detail">
+          ${infoContacto}
+          ${innerDetails ? `<br/>${innerDetails}` : ""}
+        </div>
+      </div>
+    </td>
+  `;
+
+  // Columna 2: Estado de Asistencia
+  let badgeAsistencia = "";
+  if (item.asistio) {
+    const horaStr = formatearFechaHora(item.fechaAsistencia);
+    badgeAsistencia = `
+      <td style="text-align: center;">
+        <span class="badge badge-success"><i class="fas fa-check-circle"></i> Presente</span>
+        <span style="display: block; font-size: 0.65rem; color: var(--text-muted); margin-top: 0.25rem;">${horaStr}</span>
+      </td>
+    `;
+  } else {
+    badgeAsistencia = `
+      <td style="text-align: center;">
+        <span class="badge badge-danger"><i class="far fa-clock"></i> Ausente</span>
+      </td>
+    `;
+  }
+
+  // Columna 3: Control y Acciones de Envío
+  let htmlBotonAccion = "";
+  let linkVerPase = "";
+
+  if (item.pagado) {
+    // 🟢 PAGADO
+    let botonesQR = [];
+    const urlPase = `${BASE_PUBLIC_URL}/pase.html?nombre=${encodeURIComponent(item.nombre)}&fila=${item.fila}`;
     
-    // Columna 1: Datos de la Persona
-    let innerDetails = "";
-    if (item.email) innerDetails += `<span><i class="far fa-envelope"></i> ${item.email}</span>`;
-    if (item.detallesAdicionales) innerDetails += `<span style="opacity: 0.85;"> | ${item.detallesAdicionales}</span>`;
-
-    // Badge visual del Estado del Pago
-    let badgePago = item.pagado 
-      ? `<span class="badge badge-success" style="font-size: 0.65rem; padding: 0.15rem 0.5rem;"><i class="fas fa-check-double"></i> Pagado</span>`
-      : `<span class="badge badge-danger" style="font-size: 0.65rem; padding: 0.15rem 0.5rem;"><i class="fas fa-exclamation-triangle"></i> Pendiente</span>`;
-
-    let infoContacto = "";
+    // Caso 1: Tiene Esposo
     if (item.esposoNombre && item.esposoTelefono) {
-      infoContacto += `<span><i class="fab fa-whatsapp text-success"></i> <strong>Esposo:</strong> ${item.esposoTelefono} (${item.esposoNombre})</span> `;
+      const idBtnEsposo = `btn-act-m-${item.fila}`;
+      const idDateEsposo = `date-act-m-${item.fila}`;
+      let textBtn = item.esposoQRCount > 0 ? `<i class="fas fa-redo"></i> Pase Esposo` : `<i class="fab fa-whatsapp"></i> Pase Esposo`;
+      let classBtn = item.esposoQRCount > 0 ? "btn-secondary" : "btn-primary";
+      let dateLabel = item.esposoQRFecha ? `<span id="${idDateEsposo}" style="font-size: 8px; color: var(--text-muted); display: block; margin-top: 2px;">Enviado: ${formatearFechaHora(item.esposoQRFecha)}</span>` : `<span id="${idDateEsposo}" style="font-size: 8px; color: var(--color-danger); display: block; margin-top: 2px;">No enviado</span>`;
+      
+      botonesQR.push(`
+        <div style="display: flex; flex-direction: column; align-items: center; width: 100%;">
+          <button id="${idBtnEsposo}" onclick="enviarPaseWhatsApp(${item.fila}, '${item.esposoNombre}', '${item.esposoTelefono}', '${urlPase}', '${idBtnEsposo}', '${idDateEsposo}')" 
+                  class="btn ${classBtn} btn-mini w-full">
+            ${textBtn}
+          </button>
+          ${dateLabel}
+        </div>
+      `);
     }
+    
+    // Caso 2: Tiene Esposa
     if (item.esposaNombre && item.esposaTelefono) {
-      if (infoContacto) infoContacto += `<br/>`;
-      infoContacto += `<span><i class="fab fa-whatsapp text-success"></i> <strong>Esposa:</strong> ${item.esposaTelefono} (${item.esposaNombre})</span>`;
-    }
-    if (!infoContacto) {
-      infoContacto = `<span><i class="fab fa-whatsapp text-success"></i> ${item.telefono || 'Sin teléfono'}</span>`;
-    }
-
-    const tdPersona = `
-      <td>
-        <div class="person-info-cell">
-          <div class="person-name" style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
-            ${item.nombre} ${badgePago}
-          </div>
-          <div class="person-detail">
-            ${infoContacto}
-            ${innerDetails ? `<br/>${innerDetails}` : ""}
-          </div>
+      const idBtnEsposa = `btn-act-f-${item.fila}`;
+      const idDateEsposa = `date-act-f-${item.fila}`;
+      let textBtn = item.esposaQRCount > 0 ? `<i class="fas fa-redo"></i> Pase Esposa` : `<i class="fab fa-whatsapp"></i> Pase Esposa`;
+      let classBtn = item.esposaQRCount > 0 ? "btn-secondary" : "btn-primary";
+      let dateLabel = item.esposaQRFecha ? `<span id="${idDateEsposa}" style="font-size: 8px; color: var(--text-muted); display: block; margin-top: 2px;">Enviado: ${formatearFechaHora(item.esposaQRFecha)}</span>` : `<span id="${idDateEsposa}" style="font-size: 8px; color: var(--color-danger); display: block; margin-top: 2px;">No enviado</span>`;
+      
+      botonesQR.push(`
+        <div style="display: flex; flex-direction: column; align-items: center; width: 100%; margin-top: 6px;">
+          <button id="${idBtnEsposa}" onclick="enviarPaseWhatsApp(${item.fila}, '${item.esposaNombre}', '${item.esposaTelefono}', '${urlPase}', '${idBtnEsposa}', '${idDateEsposa}')" 
+                  class="btn ${classBtn} btn-mini w-full">
+            ${textBtn}
+          </button>
+          ${dateLabel}
         </div>
-      </td>
+      `);
+    }
+    
+    // Caso 3: Fallback (inscrito individual)
+    if (botonesQR.length === 0) {
+      const idBtnGen = `btn-act-${item.fila}`;
+      const idDateGen = `date-act-${item.fila}`;
+      let textBtn = item.genQRCount > 0 ? `<i class="fas fa-redo"></i> Reenviar Pase` : `<i class="fab fa-whatsapp"></i> Enviar Pase`;
+      let classBtn = item.genQRCount > 0 ? "btn-secondary" : "btn-primary";
+      let dateLabel = item.genQRFecha ? `<span id="${idDateGen}" style="font-size: 8px; color: var(--text-muted); display: block; margin-top: 2px;">Enviado: ${formatearFechaHora(item.genQRFecha)}</span>` : `<span id="${idDateGen}" style="font-size: 8px; color: var(--color-danger); display: block; margin-top: 2px;">No enviado</span>`;
+      
+      botonesQR.push(`
+        <div style="display: flex; flex-direction: column; align-items: center; width: 100%;">
+          <button id="${idBtnGen}" onclick="enviarPaseWhatsApp(${item.fila}, '${item.nombre}', '${item.telefono}', '${urlPase}', '${idBtnGen}', '${idDateGen}')" 
+                  class="btn ${classBtn} btn-mini w-full">
+            ${textBtn}
+          </button>
+          ${dateLabel}
+        </div>
+      `);
+    }
+    
+    linkVerPase = `<a href="${urlPase}" target="_blank" class="btn btn-secondary btn-mini w-full" style="text-align: center;"><i class="far fa-eye"></i> Ver Acceso</a>`;
+    
+    htmlBotonAccion = `<div style="display: flex; flex-direction: column; width: 100%; max-width: 140px; margin: 0 auto; gap: 4px;">${botonesQR.join("")}</div>`;
+    linkVerPase = `<div style="display: flex; flex-direction: column; width: 100%; max-width: 120px; gap: 4px;">${linkVerPase}</div>`;
+    
+  } else {
+    // 🔴 PENDIENTE
+    let botonesRec = [];
+    
+    // Caso 1: Recordatorio Esposo
+    if (item.esposoNombre && item.esposoTelefono) {
+      const idBtnEsposo = `btn-act-m-${item.fila}`;
+      const idDateEsposo = `date-act-m-${item.fila}`;
+      let intentos = item.esposoRecCount || 0;
+      let textRecBtn = intentos > 0 ? `Reenviar Cobro` : `Recordar Pago`;
+      let width = Math.min((intentos / 5) * 100, 100);
+      let colorBarra = intentos >= 3 ? "var(--color-danger)" : "var(--color-warning)";
+      let dateLabel = item.esposoRecFecha ? `<span id="${idDateEsposo}" style="font-size: 8px; color: var(--text-muted); display: block; margin-top: 2px;">Cobro: ${formatearFechaHora(item.esposoRecFecha)}</span>` : `<span id="${idDateEsposo}" style="font-size: 8px; color: var(--color-danger); display: block; margin-top: 2px;">No enviado</span>`;
+
+      botonesRec.push(`
+        <div style="display: flex; flex-direction: column; align-items: center; width: 100%; margin-bottom: 8px;">
+          <button id="${idBtnEsposo}" onclick="enviarRecordatorioWhatsApp(${item.fila}, '${item.esposoNombre}', '${item.esposoTelefono}', ${intentos}, '${idBtnEsposo}', '${idDateEsposo}')" 
+                  class="btn btn-danger btn-mini w-full">
+            <i class="fab fa-whatsapp"></i> ${textRecBtn} (Esposo)
+          </button>
+          <div style="display: flex; justify-content: space-between; width: 100%; font-size: 8px; color: var(--text-muted); font-weight: bold; margin-top: 2px;">
+            <span>Msg ${intentos + 1}</span>
+            <span>Nivel ${intentos}/5</span>
+          </div>
+          <div style="width: 100%; height: 4px; background: rgba(255,255,255,0.08); border-radius: 2px; overflow: hidden; margin-top: 2px;">
+            <div style="width: ${width}%; height: 100%; background: ${colorBarra}; border-radius: 2px;"></div>
+          </div>
+          ${dateLabel}
+        </div>
+      `);
+    }
+    
+    // Caso 2: Recordatorio Esposa
+    if (item.esposaNombre && item.esposaTelefono) {
+      const idBtnEsposa = `btn-act-f-${item.fila}`;
+      const idDateEsposa = `date-act-f-${item.fila}`;
+      let intentos = item.esposaRecCount || 0;
+      let textRecBtn = intentos > 0 ? `Reenviar Cobro` : `Recordar Pago`;
+      let width = Math.min((intentos / 5) * 100, 100);
+      let colorBarra = intentos >= 3 ? "var(--color-danger)" : "var(--color-warning)";
+      let dateLabel = item.esposaRecFecha ? `<span id="${idDateEsposa}" style="font-size: 8px; color: var(--text-muted); display: block; margin-top: 2px;">Cobro: ${formatearFechaHora(item.esposaRecFecha)}</span>` : `<span id="${idDateEsposa}" style="font-size: 8px; color: var(--color-danger); display: block; margin-top: 2px;">No enviado</span>`;
+
+      botonesRec.push(`
+        <div style="display: flex; flex-direction: column; align-items: center; width: 100%;">
+          <button id="${idBtnEsposa}" onclick="enviarRecordatorioWhatsApp(${item.fila}, '${item.esposaNombre}', '${item.esposaTelefono}', ${intentos}, '${idBtnEsposa}', '${idDateEsposa}')" 
+                  class="btn btn-danger btn-mini w-full">
+            <i class="fab fa-whatsapp"></i> ${textRecBtn} (Esposa)
+          </button>
+          <div style="display: flex; justify-content: space-between; width: 100%; font-size: 8px; color: var(--text-muted); font-weight: bold; margin-top: 2px;">
+            <span>Msg ${intentos + 1}</span>
+            <span>Nivel ${intentos}/5</span>
+          </div>
+          <div style="width: 100%; height: 4px; background: rgba(255,255,255,0.08); border-radius: 2px; overflow: hidden; margin-top: 2px;">
+            <div style="width: ${width}%; height: 100%; background: ${colorBarra}; border-radius: 2px;"></div>
+          </div>
+          ${dateLabel}
+        </div>
+      `);
+    }
+    
+    // Caso 3: Fallback
+    if (botonesRec.length === 0) {
+      const idBtnGen = `btn-act-${item.fila}`;
+      const idDateGen = `date-act-${item.fila}`;
+      let intentos = item.genRecCount || 0;
+      let textRecBtn = intentos > 0 ? `Reenviar Cobro` : `Recordar Pago`;
+      let width = Math.min((intentos / 5) * 100, 100);
+      let colorBarra = intentos >= 3 ? "var(--color-danger)" : "var(--color-warning)";
+      let dateLabel = item.genRecFecha ? `<span id="${idDateGen}" style="font-size: 8px; color: var(--text-muted); display: block; margin-top: 2px;">Cobro: ${formatearFechaHora(item.genRecFecha)}</span>` : `<span id="${idDateGen}" style="font-size: 8px; color: var(--color-danger); display: block; margin-top: 2px;">No enviado</span>`;
+
+      botonesRec.push(`
+        <div style="display: flex; flex-direction: column; align-items: center; width: 100%;">
+          <button id="${idBtnGen}" onclick="enviarRecordatorioWhatsApp(${item.fila}, '${item.nombre}', '${item.telefono}', ${intentos}, '${idBtnGen}', '${idDateGen}')" 
+                  class="btn btn-danger btn-mini w-full">
+            <i class="fab fa-whatsapp"></i> ${textRecBtn}
+          </button>
+          <div style="display: flex; justify-content: space-between; width: 100%; font-size: 8px; color: var(--text-muted); font-weight: bold; margin-top: 2px;">
+            <span>Msg ${intentos + 1}</span>
+            <span>Nivel ${intentos}/5</span>
+          </div>
+          <div style="width: 100%; height: 4px; background: rgba(255,255,255,0.08); border-radius: 2px; overflow: hidden; margin-top: 2px;">
+            <div style="width: ${width}%; height: 100%; background: ${colorBarra}; border-radius: 2px;"></div>
+          </div>
+          ${dateLabel}
+        </div>
+      `);
+    }
+    
+    htmlBotonAccion = `
+      <div style="display: flex; flex-direction: column; align-items: center; width: 100%; max-width: 140px; margin: 0 auto; gap: 4px;">
+        ${botonesRec.join("")}
+      </div>
     `;
+    
+    linkVerPase = "";
+  }
 
-    // Columna 2: Estado de Asistencia
-    let badgeAsistencia = "";
-    if (item.asistio) {
-      const horaStr = formatearFechaHora(item.fechaAsistencia);
-      badgeAsistencia = `
-        <td style="text-align: center;">
-          <span class="badge badge-success"><i class="fas fa-check-circle"></i> Presente</span>
-          <span style="display: block; font-size: 0.65rem; color: var(--text-muted); margin-top: 0.25rem;">${horaStr}</span>
-        </td>
-      `;
-    } else {
-      badgeAsistencia = `
-        <td style="text-align: center;">
-          <span class="badge badge-danger"><i class="far fa-clock"></i> Ausente</span>
-        </td>
-      `;
-    }
-
-    // Columna 3: Control y Acciones de Envío
-    let htmlBotonAccion = "";
-    let linkVerPase = "";
-
-    if (item.pagado) {
-      // 🟢 PAGADO
-      let botonesQR = [];
-      let enlacesVer = [];
-      const urlPase = `${BASE_PUBLIC_URL}/pase.html?nombre=${encodeURIComponent(item.nombre)}&fila=${item.fila}`;
-      
-      // Caso 1: Tiene Esposo
-      if (item.esposoNombre && item.esposoTelefono) {
-        const idBtnEsposo = `btn-act-m-${item.fila}`;
-        const idDateEsposo = `date-act-m-${item.fila}`;
-        let textBtn = item.esposoQRCount > 0 ? `<i class="fas fa-redo"></i> Pase Esposo` : `<i class="fab fa-whatsapp"></i> Pase Esposo`;
-        let classBtn = item.esposoQRCount > 0 ? "btn-secondary" : "btn-primary";
-        let dateLabel = item.esposoQRFecha ? `<span id="${idDateEsposo}" style="font-size: 8px; color: var(--text-muted); display: block; margin-top: 2px;">Enviado: ${formatearFechaHora(item.esposoQRFecha)}</span>` : `<span id="${idDateEsposo}" style="font-size: 8px; color: var(--color-danger); display: block; margin-top: 2px;">No enviado</span>`;
-        
-        botonesQR.push(`
-          <div style="display: flex; flex-direction: column; align-items: center; width: 100%;">
-            <button id="${idBtnEsposo}" onclick="enviarPaseWhatsApp(${item.fila}, '${item.esposoNombre}', '${item.esposoTelefono}', '${urlPase}', '${idBtnEsposo}', '${idDateEsposo}')" 
-                    class="btn ${classBtn} btn-mini w-full">
-              ${textBtn}
-            </button>
-            ${dateLabel}
-          </div>
-        `);
-      }
-      
-      // Caso 2: Tiene Esposa
-      if (item.esposaNombre && item.esposaTelefono) {
-        const idBtnEsposa = `btn-act-f-${item.fila}`;
-        const idDateEsposa = `date-act-f-${item.fila}`;
-        let textBtn = item.esposaQRCount > 0 ? `<i class="fas fa-redo"></i> Pase Esposa` : `<i class="fab fa-whatsapp"></i> Pase Esposa`;
-        let classBtn = item.esposaQRCount > 0 ? "btn-secondary" : "btn-primary";
-        let dateLabel = item.esposaQRFecha ? `<span id="${idDateEsposa}" style="font-size: 8px; color: var(--text-muted); display: block; margin-top: 2px;">Enviado: ${formatearFechaHora(item.esposaQRFecha)}</span>` : `<span id="${idDateEsposa}" style="font-size: 8px; color: var(--color-danger); display: block; margin-top: 2px;">No enviado</span>`;
-        
-        botonesQR.push(`
-          <div style="display: flex; flex-direction: column; align-items: center; width: 100%; margin-top: 6px;">
-            <button id="${idBtnEsposa}" onclick="enviarPaseWhatsApp(${item.fila}, '${item.esposaNombre}', '${item.esposaTelefono}', '${urlPase}', '${idBtnEsposa}', '${idDateEsposa}')" 
-                    class="btn ${classBtn} btn-mini w-full">
-              ${textBtn}
-            </button>
-            ${dateLabel}
-          </div>
-        `);
-      }
-      
-      // Caso 3: Fallback (inscrito individual)
-      if (botonesQR.length === 0) {
-        const idBtnGen = `btn-act-${item.fila}`;
-        const idDateGen = `date-act-${item.fila}`;
-        let textBtn = item.genQRCount > 0 ? `<i class="fas fa-redo"></i> Reenviar Pase` : `<i class="fab fa-whatsapp"></i> Enviar Pase`;
-        let classBtn = item.genQRCount > 0 ? "btn-secondary" : "btn-primary";
-        let dateLabel = item.genQRFecha ? `<span id="${idDateGen}" style="font-size: 8px; color: var(--text-muted); display: block; margin-top: 2px;">Enviado: ${formatearFechaHora(item.genQRFecha)}</span>` : `<span id="${idDateGen}" style="font-size: 8px; color: var(--color-danger); display: block; margin-top: 2px;">No enviado</span>`;
-        
-        botonesQR.push(`
-          <div style="display: flex; flex-direction: column; align-items: center; width: 100%;">
-            <button id="${idBtnGen}" onclick="enviarPaseWhatsApp(${item.fila}, '${item.nombre}', '${item.telefono}', '${urlPase}', '${idBtnGen}', '${idDateGen}')" 
-                    class="btn ${classBtn} btn-mini w-full">
-              ${textBtn}
-            </button>
-            ${dateLabel}
-          </div>
-        `);
-      }
-      
-      // Agregar un único botón de Ver Acceso para la tarjeta unificada
-      enlacesVer.push(`<a href="${urlPase}" target="_blank" class="btn btn-secondary btn-mini w-full" style="text-align: center;"><i class="far fa-eye"></i> Ver Acceso</a>`);
-      
-      htmlBotonAccion = `<div style="display: flex; flex-direction: column; width: 100%; max-width: 140px; margin: 0 auto;">${botonesQR.join("")}</div>`;
-      linkVerPase = `<div style="display: flex; flex-direction: column; width: 100%; max-width: 120px; gap: 4px;">${enlacesVer.join("")}</div>`;
-      
-    } else {
-      // 🔴 PENDIENTE
-      let botonesRec = [];
-      
-      // Caso 1: Recordatorio Esposo
-      if (item.esposoNombre && item.esposoTelefono) {
-        const idBtnEsposo = `btn-act-m-${item.fila}`;
-        const idDateEsposo = `date-act-m-${item.fila}`;
-        let intentos = item.esposoRecCount || 0;
-        let textRecBtn = intentos > 0 ? `Reenviar Cobro` : `Recordar Pago`;
-        let width = Math.min((intentos / 5) * 100, 100);
-        let colorBarra = intentos >= 3 ? "var(--color-danger)" : "var(--color-warning)";
-        let dateLabel = item.esposoRecFecha ? `<span id="${idDateEsposo}" style="font-size: 8px; color: var(--text-muted); display: block; margin-top: 2px;">Cobro: ${formatearFechaHora(item.esposoRecFecha)}</span>` : `<span id="${idDateEsposo}" style="font-size: 8px; color: var(--color-danger); display: block; margin-top: 2px;">No enviado</span>`;
-
-        botonesRec.push(`
-          <div style="display: flex; flex-direction: column; align-items: center; width: 100%; margin-bottom: 8px;">
-            <button id="${idBtnEsposo}" onclick="enviarRecordatorioWhatsApp(${item.fila}, '${item.esposoNombre}', '${item.esposoTelefono}', ${intentos}, '${idBtnEsposo}', '${idDateEsposo}')" 
-                    class="btn btn-danger btn-mini w-full">
-              <i class="fab fa-whatsapp"></i> ${textRecBtn} (Esposo)
-            </button>
-            <div style="display: flex; justify-content: space-between; width: 100%; font-size: 8px; color: var(--text-muted); font-weight: bold; margin-top: 2px;">
-              <span>Msg ${intentos + 1}</span>
-              <span>Nivel ${intentos}/5</span>
-            </div>
-            <div style="width: 100%; height: 4px; background: rgba(255,255,255,0.08); border-radius: 2px; overflow: hidden; margin-top: 2px;">
-              <div style="width: ${width}%; height: 100%; background: ${colorBarra}; border-radius: 2px;"></div>
-            </div>
-            ${dateLabel}
-          </div>
-        `);
-      }
-      
-      // Caso 2: Recordatorio Esposa
-      if (item.esposaNombre && item.esposaTelefono) {
-        const idBtnEsposa = `btn-act-f-${item.fila}`;
-        const idDateEsposa = `date-act-f-${item.fila}`;
-        let intentos = item.esposaRecCount || 0;
-        let textRecBtn = intentos > 0 ? `Reenviar Cobro` : `Recordar Pago`;
-        let width = Math.min((intentos / 5) * 100, 100);
-        let colorBarra = intentos >= 3 ? "var(--color-danger)" : "var(--color-warning)";
-        let dateLabel = item.esposaRecFecha ? `<span id="${idDateEsposa}" style="font-size: 8px; color: var(--text-muted); display: block; margin-top: 2px;">Cobro: ${formatearFechaHora(item.esposaRecFecha)}</span>` : `<span id="${idDateEsposa}" style="font-size: 8px; color: var(--color-danger); display: block; margin-top: 2px;">No enviado</span>`;
-
-        botonesRec.push(`
-          <div style="display: flex; flex-direction: column; align-items: center; width: 100%;">
-            <button id="${idBtnEsposa}" onclick="enviarRecordatorioWhatsApp(${item.fila}, '${item.esposaNombre}', '${item.esposaTelefono}', ${intentos}, '${idBtnEsposa}', '${idDateEsposa}')" 
-                    class="btn btn-danger btn-mini w-full">
-              <i class="fab fa-whatsapp"></i> ${textRecBtn} (Esposa)
-            </button>
-            <div style="display: flex; justify-content: space-between; width: 100%; font-size: 8px; color: var(--text-muted); font-weight: bold; margin-top: 2px;">
-              <span>Msg ${intentos + 1}</span>
-              <span>Nivel ${intentos}/5</span>
-            </div>
-            <div style="width: 100%; height: 4px; background: rgba(255,255,255,0.08); border-radius: 2px; overflow: hidden; margin-top: 2px;">
-              <div style="width: ${width}%; height: 100%; background: ${colorBarra}; border-radius: 2px;"></div>
-            </div>
-            ${dateLabel}
-          </div>
-        `);
-      }
-      
-      // Caso 3: Fallback
-      if (botonesRec.length === 0) {
-        const idBtnGen = `btn-act-${item.fila}`;
-        const idDateGen = `date-act-${item.fila}`;
-        let intentos = item.genRecCount || 0;
-        let textRecBtn = intentos > 0 ? `Reenviar Cobro` : `Recordar Pago`;
-        let width = Math.min((intentos / 5) * 100, 100);
-        let colorBarra = intentos >= 3 ? "var(--color-danger)" : "var(--color-warning)";
-        let dateLabel = item.genRecFecha ? `<span id="${idDateGen}" style="font-size: 8px; color: var(--text-muted); display: block; margin-top: 2px;">Cobro: ${formatearFechaHora(item.genRecFecha)}</span>` : `<span id="${idDateGen}" style="font-size: 8px; color: var(--color-danger); display: block; margin-top: 2px;">No enviado</span>`;
-
-        botonesRec.push(`
-          <div style="display: flex; flex-direction: column; align-items: center; width: 100%;">
-            <button id="${idBtnGen}" onclick="enviarRecordatorioWhatsApp(${item.fila}, '${item.nombre}', '${item.telefono}', ${intentos}, '${idBtnGen}', '${idDateGen}')" 
-                    class="btn btn-danger btn-mini w-full">
-              <i class="fab fa-whatsapp"></i> ${textRecBtn}
-            </button>
-            <div style="display: flex; justify-content: space-between; width: 100%; font-size: 8px; color: var(--text-muted); font-weight: bold; margin-top: 2px;">
-              <span>Msg ${intentos + 1}</span>
-              <span>Nivel ${intentos}/5</span>
-            </div>
-            <div style="width: 100%; height: 4px; background: rgba(255,255,255,0.08); border-radius: 2px; overflow: hidden; margin-top: 2px;">
-              <div style="width: ${width}%; height: 100%; background: ${colorBarra}; border-radius: 2px;"></div>
-            </div>
-            ${dateLabel}
-          </div>
-        `);
-      }
-      
-      htmlBotonAccion = `
-        <div style="display: flex; flex-direction: column; align-items: center; width: 100%; max-width: 140px; margin: 0 auto; gap: 4px;">
-          ${botonesRec.join("")}
+  const tdAcciones = `
+    <td>
+      <div class="action-group" style="display: flex; justify-content: center; align-items: center; gap: 8px;">
+        ${linkVerPase}
+        <div style="display: flex; flex-direction: column; align-items: center;">
+          ${htmlBotonAccion}
         </div>
-      `;
-      
-      linkVerPase = "";
-    }
+      </div>
+    </td>
+  `;
 
-    const tdAcciones = `
-      <td>
-        <div class="action-group" style="display: flex; justify-content: center; align-items: center; gap: 8px;">
-          ${linkVerPase}
-          <div style="display: flex; flex-direction: column; align-items: center;">
-            ${htmlBotonAccion}
-          </div>
-        </div>
-      </td>
-    `;
+  tr.innerHTML = tdPersona + badgeAsistencia + tdAcciones;
+  return tr;
+}
 
-    tr.innerHTML = tdPersona + badgeAsistencia + tdAcciones;
-    tbody.appendChild(tr);
-  });
+/**
+ * Renderiza los registros divididos en "Asistencia Pendiente" y "Asistencia Leída"
+ */
+function renderizarTabla(lista) {
+  const tbodyPendiente = document.getElementById("tablaPendiente");
+  const tbodyLeido = document.getElementById("tablaLeido");
+  const emptyPendiente = document.getElementById("emptyPendiente");
+  const emptyLeido = document.getElementById("emptyLeido");
+
+  // Limpiar tablas
+  tbodyPendiente.innerHTML = "";
+  tbodyLeido.innerHTML = "";
+
+  // Filtrar
+  const listaPendiente = lista.filter(item => !item.asistio);
+  const listaLeido = lista.filter(item => item.asistio);
+
+  // Actualizar contadores visuales en los encabezados
+  document.getElementById("countPendiente").innerText = listaPendiente.length;
+  document.getElementById("countLeido").innerText = listaLeido.length;
+
+  // Renderizar Pendientes
+  if (listaPendiente.length === 0) {
+    emptyPendiente.classList.remove("hidden");
+  } else {
+    emptyPendiente.classList.add("hidden");
+    listaPendiente.forEach(item => {
+      tbodyPendiente.appendChild(crearFilaHTML(item));
+    });
+  }
+
+  // Renderizar Leídos
+  if (listaLeido.length === 0) {
+    emptyLeido.classList.remove("hidden");
+  } else {
+    emptyLeido.classList.add("hidden");
+    listaLeido.forEach(item => {
+      tbodyLeido.appendChild(crearFilaHTML(item));
+    });
+  }
 }
 
 // =================================================================

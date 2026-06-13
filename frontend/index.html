@@ -94,30 +94,76 @@
       </div>
     </section>
 
-    <!-- Listado Principal (Tabla Dinámica) -->
-    <main class="glass-card" style="padding: 0; overflow: hidden; border-radius: 12px;">
-      <div class="table-responsive">
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th style="width: 50%;">Nombre & Datos de Contacto</th>
-              <th style="width: 20%; text-align: center;">Asistencia</th>
-              <th style="width: 30%; text-align: center;">Acciones de Control</th>
-            </tr>
-          </thead>
-          <tbody id="tablaCuerpo">
-            <!-- Se carga dinámicamente desde js/app.js -->
-          </tbody>
-        </table>
-      </div>
+    <!-- Contenedor de Listados de Asistencia (Pendiente y Leída) -->
+    <div style="display: flex; flex-direction: column; gap: 2rem; margin-bottom: 2rem;">
+      
+      <!-- Sección: Asistencia Pendiente -->
+      <section class="glass-card" style="padding: 0; overflow: hidden; border-radius: 12px;">
+        <div style="padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; background: rgba(239, 68, 68, 0.03);">
+          <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <i class="far fa-clock" style="color: var(--color-danger); font-size: 1.25rem;"></i>
+            <h2 style="font-size: 1.1rem; font-weight: 600; margin: 0; font-family: 'Outfit', sans-serif;">Asistencia Pendiente (Ausentes)</h2>
+          </div>
+          <span class="badge badge-danger" id="countPendiente" style="font-size: 0.8rem; padding: 0.25rem 0.75rem;">0</span>
+        </div>
+        
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th style="width: 50%;">Nombre & Datos de Contacto</th>
+                <th style="width: 20%; text-align: center;">Asistencia</th>
+                <th style="width: 30%; text-align: center;">Acciones de Control</th>
+              </tr>
+            </thead>
+            <tbody id="tablaPendiente">
+              <!-- Se carga dinámicamente desde js/app.js -->
+            </tbody>
+          </table>
+        </div>
 
-      <!-- Estado Vacío -->
-      <div id="emptyState" class="empty-state hidden">
-        <div class="empty-state-icon"><i class="far fa-folder-open"></i></div>
-        <h3>No se encontraron registros</h3>
-        <p class="mt-4">Revise su búsqueda o verifique la conexión con Google Sheets.</p>
-      </div>
-    </main>
+        <!-- Estado Vacío Pendientes -->
+        <div id="emptyPendiente" class="empty-state hidden" style="padding: 3rem 1.5rem;">
+          <div class="empty-state-icon" style="font-size: 2.5rem; color: var(--color-success); opacity: 0.8; margin-bottom: 0.75rem;"><i class="fas fa-check-double"></i></div>
+          <h3>¡Todos los asistentes ingresaron!</h3>
+          <p class="mt-4" style="color: var(--text-muted); font-size: 0.875rem;">No quedan personas pendientes en la lista de asistencia.</p>
+        </div>
+      </section>
+
+      <!-- Sección: Asistencia Leída -->
+      <section class="glass-card" style="padding: 0; overflow: hidden; border-radius: 12px;">
+        <div style="padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; background: rgba(16, 185, 129, 0.03);">
+          <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <i class="fas fa-check-circle" style="color: var(--color-success); font-size: 1.25rem;"></i>
+            <h2 style="font-size: 1.1rem; font-weight: 600; margin: 0; font-family: 'Outfit', sans-serif;">Asistencia Leída (Ingresaron)</h2>
+          </div>
+          <span class="badge badge-success" id="countLeido" style="font-size: 0.8rem; padding: 0.25rem 0.75rem;">0</span>
+        </div>
+        
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th style="width: 50%;">Nombre & Datos de Contacto</th>
+                <th style="width: 20%; text-align: center;">Asistencia</th>
+                <th style="width: 30%; text-align: center;">Acciones de Control</th>
+              </tr>
+            </thead>
+            <tbody id="tablaLeido">
+              <!-- Se carga dinámicamente desde js/app.js -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Estado Vacío Leídos -->
+        <div id="emptyLeido" class="empty-state hidden" style="padding: 3rem 1.5rem;">
+          <div class="empty-state-icon" style="font-size: 2.5rem; color: var(--text-muted); opacity: 0.5; margin-bottom: 0.75rem;"><i class="far fa-folder-open"></i></div>
+          <h3>Aún no hay ingresos registrados</h3>
+          <p class="mt-4" style="color: var(--text-muted); font-size: 0.875rem;">Use el escáner QR para registrar la entrada de los asistentes.</p>
+        </div>
+      </section>
+
+    </div>
 
   </div>
 
