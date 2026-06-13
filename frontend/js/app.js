@@ -78,6 +78,45 @@ function inicializarUI() {
 
   const filterStatus = document.getElementById("filterStatus");
   if (filterStatus) filterStatus.addEventListener("change", aplicarFiltrosYRenderizar);
+
+  // Configurar colapso de Asistencia Leída
+  const headerLeido = document.getElementById("headerLeido");
+  const contentLeido = document.getElementById("contentLeido");
+  const iconCollapseLeido = document.getElementById("iconCollapseLeido");
+  
+  if (headerLeido && contentLeido) {
+    headerLeido.addEventListener("click", () => {
+      const isCollapsed = contentLeido.classList.contains("collapsed") || 
+                          contentLeido.style.maxHeight === "0px" || 
+                          !contentLeido.style.maxHeight;
+      
+      if (isCollapsed) {
+        // Expandir
+        contentLeido.classList.remove("collapsed");
+        contentLeido.style.maxHeight = contentLeido.scrollHeight + "px";
+        if (iconCollapseLeido) {
+          iconCollapseLeido.style.transform = "rotate(180deg)";
+        }
+        // Ajustar max-height a auto una vez termine la transición para que responda a cambios dinámicos
+        setTimeout(() => {
+          if (!contentLeido.classList.contains("collapsed")) {
+            contentLeido.style.maxHeight = "none";
+          }
+        }, 300);
+      } else {
+        // Colapsar
+        // Para colapsar suavemente, primero pasamos de 'none' al scrollHeight actual
+        contentLeido.style.maxHeight = contentLeido.scrollHeight + "px";
+        // Forzar reflow para que el navegador registre la altura explícita antes de animar a 0
+        contentLeido.offsetHeight; 
+        contentLeido.style.maxHeight = "0px";
+        contentLeido.classList.add("collapsed");
+        if (iconCollapseLeido) {
+          iconCollapseLeido.style.transform = "rotate(0deg)";
+        }
+      }
+    });
+  }
   
   // Mostrar advertencia si está en modo desarrollo
   const devBanner = document.getElementById("devBanner");
