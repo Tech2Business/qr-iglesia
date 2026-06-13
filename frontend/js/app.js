@@ -753,6 +753,36 @@ function renderizarTabla(lista) {
       tbodyLeido.appendChild(crearFilaHTML(item));
     });
   }
+
+  // Mostrar/Ocultar secciones según el filtro seleccionado (navegación por tarjetas)
+  const filterStatus = document.getElementById("filterStatus");
+  const seccionPendiente = document.getElementById("seccionPendiente");
+  const seccionLeido = document.getElementById("seccionLeido");
+
+  if (filterStatus && seccionPendiente && seccionLeido) {
+    const filterVal = filterStatus.value;
+    if (filterVal === "PRESENTES") {
+      seccionPendiente.classList.add("hidden");
+      seccionLeido.classList.remove("hidden");
+      
+      // Auto-expandir la sección "Asistencia Leída" si está colapsada
+      const contentLeido = document.getElementById("contentLeido");
+      const iconCollapseLeido = document.getElementById("iconCollapseLeido");
+      if (contentLeido) {
+        contentLeido.classList.remove("collapsed");
+        contentLeido.style.maxHeight = "none";
+      }
+      if (iconCollapseLeido) {
+        iconCollapseLeido.style.transform = "rotate(180deg)";
+      }
+    } else if (filterVal === "PAGADOS" || filterVal === "PENDIENTES") {
+      seccionPendiente.classList.remove("hidden");
+      seccionLeido.classList.add("hidden");
+    } else { // TODOS (Inscritos Totales)
+      seccionPendiente.classList.remove("hidden");
+      seccionLeido.classList.remove("hidden");
+    }
+  }
 }
 
 // =================================================================
