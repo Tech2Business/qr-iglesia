@@ -954,3 +954,278 @@ function formatearFechaHora(fechaInput) {
 function formatTimeNum(num) {
   return String(num).padStart(2, '0');
 }
+
+/**
+ * Genera un archivo PDF detallado de cierre de asistencia y matrícula
+ */
+async function generarReporteCierrePDF() {
+  if (listaIntegrada.length === 0) {
+    alert("⚠️ No hay datos cargados para generar el reporte. Espere a que cargue la lista.");
+    return;
+  }
+
+  mostrarLoader(true, "Generando reporte de cierre PDF...");
+
+  try {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF('p', 'mm', 'a4');
+    
+    // Configuración inicial de colores
+    const cNavy = [11, 15, 25]; // #0b0f19
+    const cGold = [217, 119, 6]; // #d97706
+    const cGoldText = [245, 158, 11]; // #f59e0b
+    const cWhite = [255, 255, 255];
+    const cMuted = [100, 116, 139];
+    
+    // Variables para la paginación (Page X of Y)
+    const totalPagesExp = "{total_pages_count_string}";
+
+    // Encabezado principal (en todas las páginas)
+    const dibujarEncabezado = (d) => {
+      // Fondo azul oscuro
+      d.setFillColor(cNavy[0], cNavy[1], cNavy[2]);
+      d.rect(0, 0, 210, 38, 'F');
+      
+      // Borde dorado
+      d.setFillColor(cGold[0], cGold[1], cGold[2]);
+      d.rect(0, 38, 210, 1.5, 'F');
+      
+      // Texto iglesia
+      d.setFont("helvetica", "bold");
+      d.setFontSize(14);
+      d.setTextColor(cWhite[0], cWhite[1], cWhite[2]);
+      d.text("COMUNIDAD CRISTIANA INTERNACIONAL", 15, 15);
+      
+      // Nombre de la conferencia
+      d.setFontSize(11);
+      d.setTextColor(cGoldText[0], cGoldText[1], cGoldText[2]);
+      d.text("CONFERENCIA: VOLVIENDO AL DISEÑO ORIGINAL", 15, 22);
+      
+      // Subtítulo
+      d.setFont("helvetica", "normal");
+      d.setFontSize(9);
+      d.setTextColor(156, 163, 175); // Slate-400
+      d.text("Reporte Consolidado de Cierre de Asistencia y Matrícula", 15, 29);
+      
+      // Fecha
+      const fechaHoy = new Date().toLocaleDateString("es-ES") + " " + new Date().toLocaleTimeString("es-ES", {hour: '2-digit', minute:'2-digit'});
+      d.text("Generado: " + fechaHoy, 150, 29);
+    };
+
+    dibujarEncabezado(doc);
+
+    // Calcular estadísticas
+    const total = listaIntegrada.length;
+    const presentes = listaIntegrada.filter(item => item.asistio).length;
+    const presentesPercent = total > 0 ? ((presentes / total) * 100).toFixed(1) : "0.0";
+    const ausentes = total - presentes;
+    const ausentesPercent = total > 0 ? ((ausentes / total) * 100).toFixed(1) : "0.0";
+    const pagados = listaIntegrada.filter(item => item.pagado).length;
+    const pagadosPercent = total > 0 ? ((pagados / total) * 100).toFixed(1) : "0.0";
+    const pendientesPago = total - pagados;
+    const pendientesPagoPercent = total > 0 ? ((pendientesPago / total) * 100).toFixed(1) : "0.0";
+
+    // WhatsApp contadores
+    const pasesEnviados = listaIntegrada.reduce((acc, curr) => acc + (curr.esposoQRCount || 0) + (curr.esposaQRCount || 0) + (curr.genQRCount || 0), 0);
+    const recordatoriosEnviados = listaIntegrada.reduce((acc, curr) => acc + (curr.esposoRecCount || 0) + (curr.esposaRecCount || 0) + (curr.genRecCount || 0), 0);
+
+    // 1. Tarjetas de Resumen
+    const yRow = 47;
+    const hCard = 26;
+    const wCard = 42;
+    const gap = 4;
+    const cardsConfig = [
+      { x: 15, label: "INSCRITOS TOTALES", value: total.toString(), color: cGold, subText: "Registrados en DB" },
+      { x: 15 + wCard + gap, label: "CONFIRMADOS (ENTRARON)", value: presentes.toString(), color: [16, 185, 129], subText: `${presentesPercent}% del total` },
+      { x: 15 + (wCard + gap) * 2, label: "PENDIENTES (AUSENTES)", value: ausentes.toString(), color: [239, 68, 68], subText: `${ausentesPercent}% del total` },
+      { x: 15 + (wCard + gap) * 3, label: "PAGADOS (TICKET)", value: pagados.toString(), color: [59, 130, 246], subText: `${pagadosPercent}% del total` }
+    ];
+
+    cardsConfig.forEach(card => {
+      doc.setFillColor(248, 250, 252);
+      doc.setDrawColor(226, 232, 240);
+      doc.setLineWidth(0.4);
+      doc.rect(card.x, yRow, wCard, hCard, 'FD');
+
+      doc.setFillColor(card.color[0], card.color[1], card.color[2]);
+      doc.rect(card.x, yRow, wCard, 3, 'F');
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(7.5);
+      doc.setTextColor(100, 116, 139);
+      doc.text(card.label, card.x + 3, yRow + 9);
+
+      doc.setFontSize(15);
+      doc.setTextColor(15, 23, 42);
+      doc.text(card.value, card.x + 3, yRow + 17);
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(7);
+      doc.setTextColor(148, 163, 184);
+      doc.text(card.subText, card.x + 3, yRow + 23);
+    });
+
+    // 2. Tabla de Control y Métricas Generales
+    const controlHeaders = [["Métrica General de Control", "Cantidad", "Porcentaje"]];
+    const controlBody = [
+      ["Total de Registros en Base de Datos", total, "100.0%"],
+      ["Asistencia Confirmada (Código QR Escaneado)", presentes, `${presentesPercent}%`],
+      ["Asistencia Pendiente (Participantes Ausentes)", ausentes, `${ausentesPercent}%`],
+      ["Participaciones Pagadas (Acceso Habilitado)", pagados, `${pagadosPercent}%`],
+      ["Inscripciones Pendientes de Pago", pendientesPago, `${pendientesPagoPercent}%`],
+      ["Pases QR con Invitaciones Enviadas por WhatsApp", pasesEnviados, "-"],
+      ["Mensajes de Recordatorios de Pago Enviados", recordatoriosEnviados, "-"]
+    ];
+
+    doc.autoTable({
+      startY: 79,
+      head: controlHeaders,
+      body: controlBody,
+      theme: 'striped',
+      headStyles: { fillColor: cNavy, textColor: cWhite },
+      styles: { fontSize: 8.5, cellPadding: 3.5 },
+      columnStyles: {
+        0: { cellWidth: 110 },
+        1: { cellWidth: 35, halign: 'center' },
+        2: { cellWidth: 35, halign: 'center' }
+      }
+    });
+
+    // 3. Listado de Participantes que Ingresaron
+    const listIngresaron = listaIntegrada.filter(item => item.asistio);
+    const ingresaronBody = listIngresaron.map((item, index) => {
+      let contactos = item.esposoTelefono ? `${item.esposoTelefono} (${item.esposoNombre || 'Esposo'})` : '';
+      if (item.esposaTelefono) {
+        if (contactos) contactos += "\n";
+        contactos += `${item.esposaTelefono} (${item.esposaNombre || 'Esposa'})`;
+      }
+      if (!contactos) contactos = item.telefono || 'Sin teléfono';
+      
+      const horaIngresoStr = item.fechaAsistencia ? formatearFechaHora(item.fechaAsistencia) : "-";
+      return [
+        index + 1,
+        item.nombre,
+        contactos,
+        item.pagado ? "PAGADO" : "PENDIENTE",
+        horaIngresoStr
+      ];
+    });
+
+    let currentY = doc.lastAutoTable.finalY + 12;
+    if (currentY + 30 > 280) {
+      doc.addPage();
+      dibujarEncabezado(doc);
+      currentY = 47;
+    }
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10.5);
+    doc.setTextColor(15, 23, 42);
+    doc.text("1. DETALLE DE PARTICIPANTES QUE INGRESARON (ASISTENCIA LEÍDA)", 15, currentY);
+
+    doc.autoTable({
+      startY: currentY + 3,
+      head: [["#", "Nombre Completo / Pareja", "Contactos de Teléfono", "Estado Pago", "Ingreso Registrado"]],
+      body: ingresaronBody.length > 0 ? ingresaronBody : [["-", "Sin ingresos confirmados hasta el momento.", "-", "-", "-"]],
+      theme: 'grid',
+      headStyles: { fillColor: [16, 185, 129], textColor: cWhite },
+      styles: { fontSize: 8, cellPadding: 3 },
+      columnStyles: {
+        0: { cellWidth: 10, halign: 'center' },
+        1: { cellWidth: 65 },
+        2: { cellWidth: 50 },
+        3: { cellWidth: 25, halign: 'center' },
+        4: { cellWidth: 30, halign: 'center' }
+      },
+      margin: { top: 45, bottom: 15 }
+    });
+
+    // 4. Listado de Participantes Ausentes
+    const listPendientes = listaIntegrada.filter(item => !item.asistio);
+    const pendientesBody = listPendientes.map((item, index) => {
+      let contactos = item.esposoTelefono ? `${item.esposoTelefono} (${item.esposoNombre || 'Esposo'})` : '';
+      if (item.esposaTelefono) {
+        if (contactos) contactos += "\n";
+        contactos += `${item.esposaTelefono} (${item.esposaNombre || 'Esposa'})`;
+      }
+      if (!contactos) contactos = item.telefono || 'Sin teléfono';
+      
+      const recordatoriosCount = (item.esposoRecCount || 0) + (item.esposaRecCount || 0) + (item.genRecCount || 0);
+
+      return [
+        index + 1,
+        item.nombre,
+        contactos,
+        item.pagado ? "PAGADO" : "PENDIENTE PAGO",
+        recordatoriosCount.toString()
+      ];
+    });
+
+    currentY = doc.lastAutoTable.finalY + 12;
+    if (currentY + 30 > 280) {
+      doc.addPage();
+      dibujarEncabezado(doc);
+      currentY = 47;
+    }
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10.5);
+    doc.setTextColor(15, 23, 42);
+    doc.text("2. DETALLE DE PERSONAS PENDIENTES POR INGRESAR (AUSENTES)", 15, currentY);
+
+    doc.autoTable({
+      startY: currentY + 3,
+      head: [["#", "Nombre Completo / Pareja", "Contactos de Teléfono", "Estado Pago", "Cobros/Recordatorios"]],
+      body: pendientesBody.length > 0 ? pendientesBody : [["-", "¡Excelente! No quedan personas pendientes. Todos asistieron.", "-", "-", "-"]],
+      theme: 'grid',
+      headStyles: { fillColor: [239, 68, 68], textColor: cWhite },
+      styles: { fontSize: 8, cellPadding: 3 },
+      columnStyles: {
+        0: { cellWidth: 10, halign: 'center' },
+        1: { cellWidth: 65 },
+        2: { cellWidth: 50 },
+        3: { cellWidth: 30, halign: 'center' },
+        4: { cellWidth: 25, halign: 'center' }
+      },
+      margin: { top: 45, bottom: 15 }
+    });
+
+    // Paginación y Firmas en pie de página para cada hoja
+    const pageCount = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      
+      if (i > 1) {
+        dibujarEncabezado(doc);
+      }
+
+      // Pie de página
+      doc.setFontSize(7.5);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(100, 116, 139);
+      
+      const strPaginas = `Página ${i} de ${totalPagesExp}`;
+      doc.text(strPaginas, 15, doc.internal.pageSize.height - 10);
+      
+      const pieTextoRight = "Reporte de Cierre y Matrícula - Generado automáticamente por Sistema QR";
+      doc.text(pieTextoRight, doc.internal.pageSize.width - 15 - doc.getTextWidth(pieTextoRight), doc.internal.pageSize.height - 10);
+      
+      doc.setDrawColor(226, 232, 240);
+      doc.setLineWidth(0.25);
+      doc.line(15, doc.internal.pageSize.height - 14, doc.internal.pageSize.width - 15, doc.internal.pageSize.height - 14);
+    }
+
+    if (typeof doc.putTotalPages === 'function') {
+      doc.putTotalPages(totalPagesExp);
+    }
+
+    const filename = `Cierre_Asistencia_${new Date().toISOString().substring(0,10)}.pdf`;
+    doc.save(filename);
+
+  } catch(e) {
+    console.error("Fallo al generar el reporte PDF: ", e);
+    alert("⚠️ Ocurrió un error al generar el PDF: " + e.message);
+  } finally {
+    mostrarLoader(false);
+  }
+}

@@ -56,6 +56,10 @@
   
   <!-- Lógica de Negocio y Controladores -->
   <script src="js/app.js?v=1.1" defer></script>
+
+  <!-- jsPDF & AutoTable CDNs for PDF Generation -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.6.0/jspdf.plugin.autotable.min.js"></script>
 </head>
 <body>
 
@@ -79,6 +83,9 @@
         <a href="scanner.html" class="btn btn-primary" style="box-shadow: 0 0 15px rgba(217, 119, 6, 0.4);">
           <i class="fas fa-camera"></i> Abrir Lector QR
         </a>
+        <button onclick="generarReporteCierrePDF()" class="btn btn-secondary" style="border-color: var(--color-warning); color: var(--color-warning); background: rgba(245, 158, 11, 0.05);" title="Generar reporte PDF de cierre de asistencia">
+          <i class="fas fa-file-pdf"></i> Cierre de Asistencia
+        </button>
         <button onclick="forzarRecarga()" class="btn btn-secondary" title="Sincronizar de nuevo">
           <i class="fas fa-sync-alt"></i> Actualizar
         </button>
