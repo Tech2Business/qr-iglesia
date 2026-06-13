@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lector QR de Asistencia - Evento Iglesia</title>
+  
+  <!-- FontAwesome Icons -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  
+  <!-- HTML5 QR Code Library -->
+  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+  
+  <!-- Estilos Premium -->
+  <link rel="stylesheet" href="css/style.css">
+  
+  <!-- Controladores del Lector QR -->
+  <script src="js/scanner.js" defer></script>
+</head>
+<body style="background-color: var(--bg-primary); overflow-y: auto;">
+
+  <!-- Contenedor del Escáner -->
+  <div class="scanner-container">
+    <div class="scanner-box">
+      
+      <!-- Cabecera del Escáner -->
+      <div class="mb-2" style="display: flex; justify-content: space-between; align-items: center; width: 100%; max-width: 450px; margin: 0 auto 1.5rem;">
+        <a href="index.html" class="btn btn-secondary btn-mini" style="border-radius: 9999px; padding: 0.5rem 1rem;">
+          <i class="fas fa-chevron-left"></i> Panel
+        </a>
+        <div style="text-align: right;">
+          <h1 style="font-size: 1.15rem; color: #fff; line-height: 1;">Lector QR</h1>
+          <span style="font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Control de Acceso</span>
+        </div>
+      </div>
+
+      <!-- Visor de Cámara y Miras de Enfoque -->
+      <div style="position: relative; width: 100%; max-width: 450px; margin: 0 auto;">
+        
+        <!-- Lector de html5-qrcode -->
+        <div id="reader"></div>
+        
+        <!-- Mira láser de escaneo animada -->
+        <div class="scanner-target-box">
+          <div class="scan-laser"></div>
+        </div>
+
+        <!-- Sincronización Inicial de Bases de Datos -->
+        <div id="loadingOverlay" class="absolute inset-0 bg-black bg-opacity-90 flex flex-col items-center justify-center z-10 loader-overlay" style="border-radius: 20px;">
+          <div class="spinner"></div>
+          <p id="loadingText" class="loader-text mt-4">Sincronizando lista...</p>
+        </div>
+      </div>
+
+      <!-- Sección de Resultados (Aparece al escanear un QR) -->
+      <div id="resultArea" class="w-full max-w-md hidden" style="margin: 0 auto;">
+        <!-- Se rellena dinámicamente con js/scanner.js -->
+      </div>
+
+      <!-- Botón de Siguiente Escaneo -->
+      <div class="flex-center mt-4">
+        <button onclick="reiniciarScanner()" id="btnReset" class="hidden btn btn-primary w-full max-w-xs" style="border-radius: 9999px; padding: 1rem 2rem; font-size: 1.1rem; box-shadow: var(--gold-shadow);">
+          <i class="fas fa-qrcode"></i> Escanear Siguiente
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Nodos de Sonidos de Confirmación y Error -->
+  <audio id="audioOk" src="https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3" preload="auto"></audio>
+  <audio id="audioFail" src="https://assets.mixkit.co/active_storage/sfx/2003/2003-preview.mp3" preload="auto"></audio>
+
+</body>
+</html>

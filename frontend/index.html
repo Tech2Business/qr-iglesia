@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Panel de Administración - Asistencia QR</title>
+  
+  <!-- FontAwesome Icons -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  
+  <!-- Estilos Premium -->
+  <link rel="stylesheet" href="css/style.css">
+  
+  <!-- Lógica de Negocio y Controladores -->
+  <script src="js/app.js" defer></script>
+</head>
+<body>
+
+  <!-- Banner de Desarrollo (Muestra si DEVELOPMENT_MODE = true) -->
+  <div id="devBanner" class="hidden" style="background: linear-gradient(to right, #78350f, #92400e); border-bottom: 2px solid var(--accent-gold); color: #fff; text-align: center; padding: 0.5rem 1rem; font-size: 0.8rem; font-weight: bold;">
+    <i class="fas fa-flask"></i> Modo Desarrollo Activo. Usando datos de simulación local. Para producción, edite <code style="background: rgba(0,0,0,0.3); padding: 2px 4px; border-radius: 4px; font-family: monospace;">frontend/js/app.js</code>.
+  </div>
+
+  <div class="container">
+    
+    <!-- Encabezado Principal -->
+    <header class="app-header glass-card">
+      <div class="app-logo">
+        <div class="logo-icon"><i class="fas fa-church"></i></div>
+        <div>
+          <h1 class="app-title">Control de Asistencia</h1>
+          <p class="app-subtitle">Sistema de Pases Digitales & Lector QR</p>
+        </div>
+      </div>
+      <div class="action-group">
+        <a href="scanner.html" class="btn btn-primary" style="box-shadow: 0 0 15px rgba(217, 119, 6, 0.4);">
+          <i class="fas fa-camera"></i> Abrir Lector QR
+        </a>
+        <button onclick="forzarRecarga()" class="btn btn-secondary" title="Sincronizar de nuevo">
+          <i class="fas fa-sync-alt"></i> Actualizar
+        </button>
+      </div>
+    </header>
+
+    <!-- Configuración Rápida de URL Pública -->
+    <section class="glass-card mb-2" style="padding: 1rem 1.5rem;">
+      <details>
+        <summary style="font-family: 'Outfit', sans-serif; font-size: 0.85rem; font-weight: 600; cursor: pointer; color: var(--accent-gold-light); outline: none;">
+          <i class="fas fa-cog"></i> Configuración de Enlace Público (WhatsApp)
+        </summary>
+        <div class="mt-4" style="display: flex; flex-direction: column; gap: 0.5rem;">
+          <label for="basePublicUrlInput" style="font-size: 0.75rem; color: var(--text-muted);">URL Base donde está publicado este panel (necesario para generar los pases de WhatsApp válidos):</label>
+          <input type="text" id="basePublicUrlInput" class="search-input" style="padding: 0.5rem 1rem;" placeholder="https://tu-usuario.github.io/qr-iglesia/frontend">
+        </div>
+      </details>
+    </section>
+
+    <!-- Tarjetas de Estadísticas en Tiempo Real -->
+    <section class="stats-grid">
+      <div class="glass-card stat-card">
+        <div class="stat-label">Inscritos Totales</div>
+        <div class="stat-value" id="statTotal">0</div>
+      </div>
+      <div class="glass-card stat-card success">
+        <div class="stat-label">Pagados</div>
+        <div class="stat-value" id="statPagados">0</div>
+      </div>
+      <div class="glass-card stat-card danger">
+        <div class="stat-label">Pendientes de Pago</div>
+        <div class="stat-value" id="statPendientes">0</div>
+      </div>
+      <div class="glass-card stat-card warning">
+        <div class="stat-label">Confirmados (Entraron)</div>
+        <div class="stat-value" id="statPresentes">0</div>
+      </div>
+    </section>
+
+    <!-- Barra de Filtros y Búsqueda -->
+    <section class="controls-bar">
+      <div class="search-wrapper">
+        <i class="fas fa-search search-icon"></i>
+        <input type="text" id="searchInput" class="search-input" placeholder="Buscar por nombre, teléfono, correo o celda...">
+      </div>
+      <div>
+        <select id="filterStatus" class="select-input">
+          <option value="TODOS">Todos los Inscritos</option>
+          <option value="PAGADOS">Pagados (Enviar Pase)</option>
+          <option value="PENDIENTES">Pendientes de Pago (Recordatorio)</option>
+          <option value="PRESENTES">Confirmados (Presentes)</option>
+        </select>
+      </div>
+    </section>
+
+    <!-- Listado Principal (Tabla Dinámica) -->
+    <main class="glass-card" style="padding: 0; overflow: hidden; border-radius: 12px;">
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th style="width: 50%;">Nombre & Datos de Contacto</th>
+              <th style="width: 20%; text-align: center;">Asistencia</th>
+              <th style="width: 30%; text-align: center;">Acciones de Control</th>
+            </tr>
+          </thead>
+          <tbody id="tablaCuerpo">
+            <!-- Se carga dinámicamente desde js/app.js -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Estado Vacío -->
+      <div id="emptyState" class="empty-state hidden">
+        <div class="empty-state-icon"><i class="far fa-folder-open"></i></div>
+        <h3>No se encontraron registros</h3>
+        <p class="mt-4">Revise su búsqueda o verifique la conexión con Google Sheets.</p>
+      </div>
+    </main>
+
+  </div>
+
+  <!-- Pantalla de Carga Animada (Loader) -->
+  <div id="loaderOverlay" class="loader-overlay hidden">
+    <div class="spinner"></div>
+    <div class="loader-text" id="loaderText">Cargando base de datos...</div>
+  </div>
+
+</body>
+</html>

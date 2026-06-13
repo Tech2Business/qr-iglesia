@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <title>Pase de Entrada Digital - Volviendo al Diseño Original</title>
+  
+  <!-- Open Graph / WhatsApp Preview Meta Tags -->
+  <meta property="og:title" content="Pase de Entrada Digital">
+  <meta property="og:description" content="CONFERENCIA: VOLVIENDO AL DISEÑO ORIGINAL. Registro Confirmado.">
+  <meta property="og:image" content="https://lh7-rt.googleusercontent.com/formsz/AN7BsVAagC7U1l1WLdck-C4DlGXKnMQ-zJ40z9dniv9vZ3MM-dMC3vIDUeArWzjfzzXWZkTPChSTJWRYRIZG51EGWqGzq99mLGuxEpAz9NJ0R6QaG1PaW62OGO9uiAIVCM-tzoK9l8u9kGXOYBJShOok_lsB7QXLpwsBIjXiIkmNtrxGyb2A5fXsGI_sCgh8lV7c3ZR_gPJBEcmVGZIw7ss=w1000?key=Ldh0BbPTUxZFW8EQfzFipg">
+  <meta property="og:type" content="website">
+
+  <!-- FontAwesome Icons -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  
+  <!-- Google Fonts: Roboto -->
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+  
+  <!-- QR Code Generator Library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  
+  <style>
+    /* Reset & Base Styles matching Google Form Theme */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Roboto', sans-serif;
+      background-color: #fcdfe3; /* Light pinkish background from Google Form */
+      color: #202124; /* Dark gray from Google Form */
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 1.25rem;
+    }
+
+    /* Pass Card Styling */
+    .pass-container {
+      width: 100%;
+      max-width: 380px;
+      background-color: #ffffff;
+      border-radius: 12px;
+      border: 1px solid #dadce0;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Event Banner Image at the top */
+    .pass-banner {
+      width: 100%;
+      height: auto;
+      max-height: 130px;
+      object-fit: cover;
+      display: block;
+      border-bottom: 1px solid #dadce0;
+    }
+
+    /* Card Content Area */
+    .pass-content {
+      padding: 1.75rem;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.25rem;
+    }
+
+    /* Church Subheader */
+    .pass-church-name {
+      font-size: 0.8rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      color: #70757a;
+      letter-spacing: 0.08em;
+    }
+
+    /* Event Main Title */
+    .pass-event-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #202124;
+      line-height: 1.35;
+      margin-top: -0.25rem;
+    }
+
+    /* Green badge box for Confirmation */
+    .pass-badge-confirmed {
+      background-color: #137333; /* Google Form success green */
+      color: #ffffff;
+      font-size: 0.85rem;
+      font-weight: 700;
+      padding: 0.45rem 1.25rem;
+      border-radius: 4px;
+      display: inline-block;
+      letter-spacing: 0.05em;
+      box-shadow: 0 2px 4px rgba(19, 115, 51, 0.2);
+    }
+
+    /* Guest Names (Husband & Wife) */
+    .pass-guest-names {
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: #202124;
+      line-height: 1.3;
+      word-break: break-word;
+      margin: 0.25rem 0;
+    }
+
+    /* QR Code Area */
+    .pass-qr-area {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.75rem;
+      width: 100%;
+    }
+
+    .pass-qr-frame {
+      background-color: #ffffff;
+      padding: 8px;
+      border-radius: 8px;
+      border: 1px solid #dadce0;
+      display: inline-block;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    }
+
+    .pass-qr-frame canvas, .pass-qr-frame img {
+      display: block;
+    }
+
+    .pass-instruction {
+      font-size: 0.8rem;
+      color: #70757a;
+      font-weight: 500;
+    }
+
+    .pass-validity {
+      font-size: 0.75rem;
+      color: #70757a;
+      font-style: italic;
+      margin-top: -0.5rem;
+      opacity: 0.85;
+    }
+
+    /* Card Footer Information */
+    .pass-footer {
+      width: 100%;
+      border-top: 1px solid #dadce0;
+      padding-top: 0.85rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.8rem;
+      color: #70757a;
+      font-weight: 500;
+    }
+
+    .pass-meta-label {
+      color: #70757a;
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    .pass-meta-label i {
+      color: #E82945; /* Google Form theme color accent */
+    }
+
+    .pass-meta-value {
+      font-weight: 700;
+      color: #202124;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="pass-container">
+    <!-- Header Banner Image matching Google Forms Header -->
+    <img class="pass-banner" src="https://lh7-rt.googleusercontent.com/formsz/AN7BsVAagC7U1l1WLdck-C4DlGXKnMQ-zJ40z9dniv9vZ3MM-dMC3vIDUeArWzjfzzXWZkTPChSTJWRYRIZG51EGWqGzq99mLGuxEpAz9NJ0R6QaG1PaW62OGO9uiAIVCM-tzoK9l8u9kGXOYBJShOok_lsB7QXLpwsBIjXiIkmNtrxGyb2A5fXsGI_sCgh8lV7c3ZR_gPJBEcmVGZIw7ss=w1000?key=Ldh0BbPTUxZFW8EQfzFipg" alt="Conferencia Banner">
+    
+    <div class="pass-content">
+      <div class="pass-church-name">Comunidad Cristiana Internacional</div>
+      <h1 class="pass-event-title">CONFERENCIA: VOLVIENDO AL DISEÑO ORIGINAL</h1>
+      
+      <!-- green badge status box -->
+      <div class="pass-badge-confirmed">
+        <i class="fas fa-check-circle"></i> REGISTRO CONFIRMADO
+      </div>
+      
+      <!-- Combined husband & wife names -->
+      <h2 class="pass-guest-names" id="displayGuestName">Cargando...</h2>
+      
+      <!-- QR Code and Sub-labels -->
+      <div class="pass-qr-area">
+        <div class="pass-qr-frame" id="qrcode"></div>
+        <div class="pass-instruction">Muestre este QR en el acceso</div>
+        <div class="pass-validity">Valido para un único ingreso</div>
+      </div>
+      
+      <!-- Meta Information Footer -->
+      <div class="pass-footer">
+        <div class="pass-meta-label">
+          <i class="fas fa-sign-in-alt"></i> Acceso Evento
+        </div>
+        <div class="pass-meta-value" id="displayTicketID">
+          Ticket # --
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 1. Obtener parámetros de la URL de forma segura
+    const params = new URLSearchParams(window.location.search);
+    
+    // URLSearchParams.get decodifica automáticamente los caracteres especiales
+    const rawNombre = params.get('nombre') || params.get('esposo') || "";
+    const rawFila = params.get('fila') || "";
+    
+    // Fallbacks para pruebas directas del archivo
+    const nombreAsistente = rawNombre ? rawNombre.trim() : "Invitado de Honor";
+    const filaRegistro = rawFila ? rawFila.trim() : "DEMO";
+
+    // 2. Renderizar textos en el pase
+    document.getElementById('displayGuestName').innerText = nombreAsistente;
+    document.getElementById('displayTicketID').innerText = `Ticket # ${filaRegistro}`;
+
+    // 3. Normalizar texto para el código QR
+    // Convierte acentos y eñes para evitar romper la codificación estándar del código QR
+    function normalizarParaQR(texto) {
+      if (!texto) return "";
+      return texto
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-zA-Z0-9\s]/g, "") // Mantener letras, números y espacios
+        .trim();
+    }
+
+    // 4. Formato de datos del QR: "ASISTENCIA_QR: [Fila] | [Nombre]"
+    const datosNormalizados = `ASISTENCIA_QR: ${filaRegistro} | ${normalizarParaQR(nombreAsistente)}`;
+
+    // 5. Generar QR de alta calidad localmente
+    new QRCode(document.getElementById("qrcode"), {
+      text: datosNormalizados,
+      width: 180,
+      height: 180,
+      colorDark : "#202124", /* Matching dark gray text color */
+      colorLight : "#ffffff",
+      correctLevel : QRCode.CorrectLevel.M
+    });
+  </script>
+
+</body>
+</html>
