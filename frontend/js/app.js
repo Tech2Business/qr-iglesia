@@ -33,8 +33,6 @@ const MENSAJES_PAGO = [
 let inscritosRaw = [];
 let asistenciasRaw = [];
 let listaIntegrada = [];
-let chartAsistenciaInstance = null;
-let chartPagoInstance = null;
 
 // =================================================================
 // 🧪 MOCK DATA PARA MODO DESARROLLO (Local)
@@ -755,91 +753,6 @@ function renderizarTabla(lista) {
       tbodyLeido.appendChild(crearFilaHTML(item));
     });
   }
-
-  // Actualizar gráficos estadísticos interactivos
-  actualizarGraficos(lista);
-}
-
-/**
- * Actualiza dinámicamente los gráficos interactivos de Chart.js
- */
-function actualizarGraficos(lista) {
-  const total = lista.length;
-  const presentes = lista.filter(item => item.asistio).length;
-  const ausentes = total - presentes;
-  
-  const pagados = lista.filter(item => item.pagado).length;
-  const pendientes = total - pagados;
-
-  const dataAsist = total > 0 ? [presentes, ausentes] : [0, 1];
-  const bgAsist = total > 0 ? ['#10b981', '#ef4444'] : ['#334155', '#334155'];
-  const labelsAsist = total > 0 ? ['Ingresaron', 'Ausentes'] : ['Sin registros', 'Sin registros'];
-
-  const dataPago = total > 0 ? [pagados, pendientes] : [0, 1];
-  const bgPago = total > 0 ? ['#3b82f6', '#f59e0b'] : ['#334155', '#334155'];
-  const labelsPago = total > 0 ? ['Pagados', 'Pendientes'] : ['Sin registros', 'Sin registros'];
-
-  // Gráfico de Asistencia
-  const ctxAsist = document.getElementById("chartAsistencia");
-  if (ctxAsist) {
-    if (chartAsistenciaInstance) {
-      chartAsistenciaInstance.destroy();
-    }
-    chartAsistenciaInstance = new Chart(ctxAsist, {
-      type: 'doughnut',
-      data: {
-        labels: labelsAsist,
-        datasets: [{
-          data: dataAsist,
-          backgroundColor: bgAsist,
-          borderColor: '#111827',
-          borderWidth: 2
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: {
-            position: 'bottom',
-            labels: { color: '#94a3b8', boxWidth: 12, font: { size: 10 } }
-          }
-        },
-        cutout: '70%'
-      }
-    });
-  }
-
-  // Gráfico de Pago
-  const ctxPago = document.getElementById("chartPago");
-  if (ctxPago) {
-    if (chartPagoInstance) {
-      chartPagoInstance.destroy();
-    }
-    chartPagoInstance = new Chart(ctxPago, {
-      type: 'doughnut',
-      data: {
-        labels: labelsPago,
-        datasets: [{
-          data: dataPago,
-          backgroundColor: bgPago,
-          borderColor: '#111827',
-          borderWidth: 2
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: {
-            position: 'bottom',
-            labels: { color: '#94a3b8', boxWidth: 12, font: { size: 10 } }
-          }
-        },
-        cutout: '70%'
-      }
-    });
-  }
 }
 
 // =================================================================
@@ -1152,40 +1065,67 @@ async function generarReporteCierrePDF() {
       doc.text(card.subText, card.x + 3, yRow + 23);
     });
 
-    // Dibujar barras de progreso visual en el PDF
-    const yBars = 78;
-    const hBar = 3.5;
-    const wBar = 85;
-
-    // Barra 1: Asistencia
+    // Dibujar gráficos de barras en el PDF
+    const ySectionCharts = 77;
     doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    doc.setTextColor(cNavy[0], cNavy[1], cNavy[2]);
+    doc.text("GRÁFICOS DE CONTROL (DISTRIBUCIÓN Y PROGRESO)", 15, ySectionCharts);
+
+    // Dibujar fondo de sección
+    doc.setFillColor(248, 250, 252);
+    doc.setDrawColor(226, 232, 240);
+    doc.rect(15, ySectionCharts + 2, 180, 25, 'FD');
+
+    // Gráfico 1: Asistencia (Ingresaron vs Ausentes)
     doc.setFontSize(7.5);
-    doc.setTextColor(100, 116, 139);
-    doc.text(`PROGRESO DE ASISTENCIA: ${presentesPercent}%`, 15, yBars - 1.5);
-    
+    doc.setTextColor(15, 23, 42);
+    doc.text("Distribución de Asistencia:", 20, ySectionCharts + 8);
+
+    // Barra de Ingresaron (Verde)
     doc.setFillColor(241, 245, 249);
-    doc.rect(15, yBars, wBar, hBar, 'F');
+    doc.rect(20, ySectionCharts + 10, 55, 4, 'F');
     if (parseFloat(presentesPercent) > 0) {
       doc.setFillColor(16, 185, 129);
-      doc.rect(15, yBars, wBar * (parseFloat(presentesPercent) / 100), hBar, 'F');
+      doc.rect(20, ySectionCharts + 10, 55 * (parseFloat(presentesPercent) / 100), 4, 'F');
     }
-    doc.setDrawColor(226, 232, 240);
-    doc.setLineWidth(0.2);
-    doc.rect(15, yBars, wBar, hBar, 'D');
-
-    // Barra 2: Pagos
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(7.5);
     doc.setTextColor(100, 116, 139);
-    doc.text(`MATRÍCULA PAGADA: ${pagadosPercent}%`, 110, yBars - 1.5);
-    
+    doc.setFont("helvetica", "normal");
+    doc.text(`Ingresaron: ${presentes} (${presentesPercent}%)`, 78, ySectionCharts + 13);
+
+    // Barra de Ausentes (Rojo)
     doc.setFillColor(241, 245, 249);
-    doc.rect(110, yBars, wBar, hBar, 'F');
+    doc.rect(20, ySectionCharts + 16, 55, 4, 'F');
+    if (parseFloat(ausentesPercent) > 0) {
+      doc.setFillColor(239, 68, 68);
+      doc.rect(20, ySectionCharts + 16, 55 * (parseFloat(ausentesPercent) / 100), 4, 'F');
+    }
+    doc.text(`Ausentes: ${ausentes} (${ausentesPercent}%)`, 78, ySectionCharts + 19);
+
+    // Gráfico 2: Pagos (Pagados vs Pendientes)
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(15, 23, 42);
+    doc.text("Distribución de Pagos:", 110, ySectionCharts + 8);
+
+    // Barra de Pagados (Azul)
+    doc.setFillColor(241, 245, 249);
+    doc.rect(110, ySectionCharts + 10, 55, 4, 'F');
     if (parseFloat(pagadosPercent) > 0) {
       doc.setFillColor(59, 130, 246);
-      doc.rect(110, yBars, wBar * (parseFloat(pagadosPercent) / 100), hBar, 'F');
+      doc.rect(110, ySectionCharts + 10, 55 * (parseFloat(pagadosPercent) / 100), 4, 'F');
     }
-    doc.rect(110, yBars, wBar, hBar, 'D');
+    doc.setTextColor(100, 116, 139);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Pagados: ${pagados} (${pagadosPercent}%)`, 168, ySectionCharts + 13);
+
+    // Barra de Pendientes de Pago (Naranja)
+    doc.setFillColor(241, 245, 249);
+    doc.rect(110, ySectionCharts + 16, 55, 4, 'F');
+    if (parseFloat(pendientesPagoPercent) > 0) {
+      doc.setFillColor(245, 158, 11);
+      doc.rect(110, ySectionCharts + 16, 55 * (parseFloat(pendientesPagoPercent) / 100), 4, 'F');
+    }
+    doc.text(`Pendientes: ${pendientesPago} (${pendientesPagoPercent}%)`, 168, ySectionCharts + 19);
 
     // 2. Tabla de Control y Métricas Generales
     const controlHeaders = [["Métrica General de Control", "Cantidad", "Porcentaje"]];
@@ -1200,7 +1140,7 @@ async function generarReporteCierrePDF() {
     ];
 
     doc.autoTable({
-      startY: 86,
+      startY: 107,
       head: controlHeaders,
       body: controlBody,
       theme: 'striped',
