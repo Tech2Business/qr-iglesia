@@ -1029,16 +1029,17 @@ async function generarReporteCierrePDF() {
     const pasesEnviados = listaIntegrada.reduce((acc, curr) => acc + (curr.esposoQRCount || 0) + (curr.esposaQRCount || 0) + (curr.genQRCount || 0), 0);
     const recordatoriosEnviados = listaIntegrada.reduce((acc, curr) => acc + (curr.esposoRecCount || 0) + (curr.esposaRecCount || 0) + (curr.genRecCount || 0), 0);
 
-    // 1. Tarjetas de Resumen
+    // 1. Tarjetas de Resumen (5 tarjetas)
     const yRow = 47;
     const hCard = 26;
-    const wCard = 42;
+    const wCard = 32.8;
     const gap = 4;
     const cardsConfig = [
       { x: 15, label: "INSCRITOS TOTALES", value: total.toString(), color: cGold, subText: "Registrados en DB" },
       { x: 15 + wCard + gap, label: "CONFIRMADOS (ENTRARON)", value: presentes.toString(), color: [16, 185, 129], subText: `${presentesPercent}% del total` },
       { x: 15 + (wCard + gap) * 2, label: "PENDIENTES (AUSENTES)", value: ausentes.toString(), color: [239, 68, 68], subText: `${ausentesPercent}% del total` },
-      { x: 15 + (wCard + gap) * 3, label: "PAGADOS (TICKET)", value: pagados.toString(), color: [59, 130, 246], subText: `${pagadosPercent}% del total` }
+      { x: 15 + (wCard + gap) * 3, label: "PAGADOS (TICKET)", value: pagados.toString(), color: [59, 130, 246], subText: `${pagadosPercent}% del total` },
+      { x: 15 + (wCard + gap) * 4, label: "PENDIENTES DE PAGO", value: pendientesPago.toString(), color: [245, 158, 11], subText: `${pendientesPagoPercent}% del total` }
     ];
 
     cardsConfig.forEach(card => {
@@ -1051,18 +1052,18 @@ async function generarReporteCierrePDF() {
       doc.rect(card.x, yRow, wCard, 3, 'F');
 
       doc.setFont("helvetica", "bold");
-      doc.setFontSize(7.5);
+      doc.setFontSize(6.5);
       doc.setTextColor(100, 116, 139);
-      doc.text(card.label, card.x + 3, yRow + 9);
+      doc.text(card.label, card.x + 2.5, yRow + 9);
 
-      doc.setFontSize(15);
+      doc.setFontSize(14);
       doc.setTextColor(15, 23, 42);
-      doc.text(card.value, card.x + 3, yRow + 17);
+      doc.text(card.value, card.x + 2.5, yRow + 17);
 
       doc.setFont("helvetica", "normal");
-      doc.setFontSize(7);
+      doc.setFontSize(6.5);
       doc.setTextColor(148, 163, 184);
-      doc.text(card.subText, card.x + 3, yRow + 23);
+      doc.text(card.subText, card.x + 2.5, yRow + 23);
     });
 
     // Dibujar gráficos de barras en el PDF
@@ -1152,6 +1153,115 @@ async function generarReporteCierrePDF() {
         2: { cellWidth: 35, halign: 'center' }
       }
     });
+
+    // Calcular recordatorios por niveles (1 al 5)
+    let countL1 = 0;
+    let countL2 = 0;
+    let countL3 = 0;
+    let countL4 = 0;
+    let countL5 = 0;
+
+    listaIntegrada.forEach(item => {
+      const hRec = item.esposoRecCount || 0;
+      if (hRec >= 1) countL1++;
+      if (hRec >= 2) countL2++;
+      if (hRec >= 3) countL3++;
+      if (hRec >= 4) countL4++;
+      if (hRec >= 5) countL5 += (hRec - 4);
+
+      const wRec = item.esposaRecCount || 0;
+      if (wRec >= 1) countL1++;
+      if (wRec >= 2) countL2++;
+      if (wRec >= 3) countL3++;
+      if (wRec >= 4) countL4++;
+      if (wRec >= 5) countL5 += (wRec - 4);
+
+      const gRec = item.genRecCount || 0;
+      if (gRec >= 1) countL1++;
+      if (gRec >= 2) countL2++;
+      if (gRec >= 3) countL3++;
+      if (gRec >= 4) countL4++;
+      if (gRec >= 5) countL5 += (gRec - 4);
+    });
+
+    let ySectionReminders = doc.lastAutoTable.finalY + 10;
+    if (ySectionReminders + 42 > 280) {
+      doc.addPage();
+      dibujarEncabezado(doc);
+      ySectionReminders = 47;
+    }
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    doc.setTextColor(cNavy[0], cNavy[1], cNavy[2]);
+    doc.text("DESGLOSE DE RECORDATORIOS DE PAGO POR NIVEL (WHATSAPP)", 15, ySectionReminders);
+
+    // Dibujar fondo de sección
+    doc.setFillColor(248, 250, 252);
+    doc.setDrawColor(226, 232, 240);
+    doc.rect(15, ySectionReminders + 2, 180, 36, 'FD');
+
+    // Tabla de niveles (izquierda)
+    doc.autoTable({
+      startY: ySectionReminders + 4,
+      margin: { left: 18 },
+      head: [["Nivel de Recordatorio", "Enviados", "% del Total"]],
+      body: [
+        ["Nivel 1 (Mensaje Inicial)", countL1, recordatoriosEnviados > 0 ? `${(countL1 / recordatoriosEnviados * 100).toFixed(1)}%` : "0.0%"],
+        ["Nivel 2 (Recordatorio)", countL2, recordatoriosEnviados > 0 ? `${(countL2 / recordatoriosEnviados * 100).toFixed(1)}%` : "0.0%"],
+        ["Nivel 3 (Segundo Rec.)", countL3, recordatoriosEnviados > 0 ? `${(countL3 / recordatoriosEnviados * 100).toFixed(1)}%` : "0.0%"],
+        ["Nivel 4 (Aviso Formal)", countL4, recordatoriosEnviados > 0 ? `${(countL4 / recordatoriosEnviados * 100).toFixed(1)}%` : "0.0%"],
+        ["Nivel 5 (Cobro Final)", countL5, recordatoriosEnviados > 0 ? `${(countL5 / recordatoriosEnviados * 100).toFixed(1)}%` : "0.0%"]
+      ],
+      theme: 'striped',
+      headStyles: { fillColor: cNavy, textColor: cWhite, fontSize: 7.5, cellPadding: 2 },
+      styles: { fontSize: 7, cellPadding: 1.8 },
+      columnStyles: {
+        0: { cellWidth: 42 },
+        1: { cellWidth: 16, halign: 'center' },
+        2: { cellWidth: 16, halign: 'center' }
+      }
+    });
+
+    // Gráfico de barras (derecha)
+    const maxRecVal = Math.max(countL1, countL2, countL3, countL4, countL5, 1);
+    const xChartStart = 110;
+    const wChartBarMax = 45;
+    const barColors = [
+      [96, 165, 250],   // L1: Light Blue
+      [79, 70, 229],   // L2: Indigo
+      [245, 158, 11],   // L3: Amber
+      [234, 88, 12],    // L4: Orange
+      [239, 68, 68]     // L5: Red
+    ];
+    const recCounts = [countL1, countL2, countL3, countL4, countL5];
+    const recLabels = ["L1", "L2", "L3", "L4", "L5"];
+
+    for (let i = 0; i < 5; i++) {
+      const yBar = ySectionReminders + 9.5 + (i * 4.6);
+      
+      // Etiqueta de texto (ej. L1)
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(7);
+      doc.setTextColor(100, 116, 139);
+      doc.text(recLabels[i] + ":", xChartStart, yBar + 2.5);
+      
+      // Fondo de la barra
+      doc.setFillColor(241, 245, 249);
+      doc.rect(xChartStart + 6, yBar, wChartBarMax, 3.2, 'F');
+      
+      // Progreso de la barra
+      if (recCounts[i] > 0) {
+        doc.setFillColor(barColors[i][0], barColors[i][1], barColors[i][2]);
+        doc.rect(xChartStart + 6, yBar, wChartBarMax * (recCounts[i] / maxRecVal), 3.2, 'F');
+      }
+      
+      // Cantidad enviada
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(7);
+      doc.setTextColor(71, 85, 105);
+      doc.text(`${recCounts[i]} env.`, xChartStart + 6 + wChartBarMax + 2, yBar + 2.5);
+    }
 
     // 3. Listado de Participantes que Ingresaron
     const listIngresaron = listaIntegrada.filter(item => item.asistio);
