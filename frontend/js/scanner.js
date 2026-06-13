@@ -235,6 +235,14 @@ async function validarQR(textoQR) {
       // ⚠️ ADVERTENCIA: YA INGRESÓ ANTERIORMENTE
       playAudio("audioFail");
       
+      const registroAnterior = listaAsistencias.find(a => 
+        a.filaInscripcion === encontrado.fila && 
+        a.estado === "ASISTENCIA" && 
+        normalizar(a.nombre) === normalizar(nombreEncontradoMatch)
+      );
+      
+      const fechaHoraIngreso = registroAnterior ? formatearFechaHora(registroAnterior.fecha) : "Fecha no disponible";
+      
       resultArea.innerHTML = `
         <div class="result-card warning">
           <div class="result-icon"><i class="fas fa-exclamation-triangle"></i></div>
@@ -250,8 +258,9 @@ async function validarQR(textoQR) {
             <span class="result-meta-badge">${infoMapeada.grupo}</span>
           </div>
           
-          <p style="margin-top: 1rem; font-size: 0.85rem; font-weight: bold;">
-            Esta persona ya fue registrada anteriormente.
+          <p style="margin-top: 1rem; font-size: 0.9rem; font-weight: bold; background: rgba(0, 0, 0, 0.2); padding: 8px 12px; border-radius: 8px;">
+            Ingreso registrado:<br>
+            <span style="font-size: 1.05rem; font-weight: 800; color: #fef08a;">${fechaHoraIngreso}</span>
           </p>
         </div>
       `;
@@ -441,5 +450,33 @@ function playAudio(elementId) {
     }
   } catch(e) {
     console.warn("Fallo al reproducir audio: ", e);
+  }
+}
+
+/**
+ * Formatea una fecha ISO o timestamp de Sheets en formato legible en español: dd/mm/aaaa a las hh:mm am/pm
+ */
+function formatearFechaHora(fechaStr) {
+  if (!fechaStr) return "Fecha no disponible";
+  try {
+    const fecha = new Date(fechaStr);
+    if (isNaN(fecha.getTime())) return fechaStr.toString(); // Fallback si es texto plano
+    
+    // Formato de hora: hh:mm am/pm
+    let horas = fecha.getHours();
+    const minutos = String(fecha.getMinutes()).padStart(2, '0');
+    const ampm = horas >= 12 ? 'PM' : 'AM';
+    horas = horas % 12;
+    horas = horas ? horas : 12; // el número 0 debe ser 12
+    const horaStr = `${horas}:${minutos} ${ampm}`;
+    
+    // Formato de fecha: dd/mm/aaaa
+    const dia = String(fecha.getDate()).padStart(2, '0');
+    const mes = String(fecha.getMonth() + 1).padStart(2, '0');
+    const anio = fecha.getFullYear();
+    
+    return `${dia}/${mes}/${anio} a las ${horaStr}`;
+  } catch(e) {
+    return fechaStr.toString();
   }
 }
