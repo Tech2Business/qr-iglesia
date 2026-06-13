@@ -52,6 +52,18 @@
       background: rgba(245, 158, 11, 0.08) !important;
       box-shadow: 0 0 15px rgba(245, 158, 11, 0.15);
     }
+    
+    /* Contenedor de gráficos adaptativo */
+    .charts-grid-wrapper {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+    }
+    @media(min-width: 768px) {
+      .charts-grid-wrapper {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
   </style>
   
   <!-- Lógica de Negocio y Controladores -->
@@ -60,6 +72,9 @@
   <!-- jsPDF & AutoTable CDNs for PDF Generation -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.6.0/jspdf.plugin.autotable.min.js"></script>
+  
+  <!-- Chart.js CDN for Statistics Charts -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 
@@ -122,6 +137,27 @@
       <div class="glass-card stat-card warning" id="cardPresentes">
         <div class="stat-label">Confirmados (Entraron)</div>
         <div class="stat-value" id="statPresentes">0</div>
+      </div>
+    </section>
+
+    <!-- Gráficos Estadísticos Interactivos -->
+    <section class="glass-card" style="padding: 1.5rem; margin-top: 1.5rem; margin-bottom: 1.5rem;">
+      <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 1rem; font-family: 'Outfit', sans-serif; display: flex; align-items: center; gap: 0.5rem; color: var(--accent-gold-light);">
+        <i class="fas fa-chart-pie"></i> Distribución de Asistencia y Pagos
+      </h3>
+      <div class="charts-grid-wrapper">
+        <div style="background: rgba(255,255,255,0.01); padding: 1.25rem 1rem; border-radius: 10px; border: 1px solid var(--border-color); display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 220px;">
+          <h4 style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; text-align: center;">Estado de Asistencia (Ingresaron vs Ausentes)</h4>
+          <div style="width: 100%; max-width: 250px; height: 160px; position: relative;">
+            <canvas id="chartAsistencia"></canvas>
+          </div>
+        </div>
+        <div style="background: rgba(255,255,255,0.01); padding: 1.25rem 1rem; border-radius: 10px; border: 1px solid var(--border-color); display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 220px;">
+          <h4 style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; text-align: center;">Estado de Pago (Pagados vs Pendientes)</h4>
+          <div style="width: 100%; max-width: 250px; height: 160px; position: relative;">
+            <canvas id="chartPago"></canvas>
+          </div>
+        </div>
       </div>
     </section>
 
