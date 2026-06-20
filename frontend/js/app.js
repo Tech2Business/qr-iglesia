@@ -232,7 +232,6 @@ function integrarYMostrar() {
     
     // Encontrar nombres, teléfonos y pago analizando cabeceras dinámicamente
     const infoMapeada = mapearCamposDinamicos(persona);
-    if (infoMapeada.pagado) console.log("DEBUG PAGADO:", JSON.stringify(persona));
 
     // Omitir filas vacías, de cabecera secundaria o de resumen sin nombres válidos
     if (!infoMapeada.nombre || infoMapeada.nombre === "Sin Nombre" || infoMapeada.nombre.trim() === "") {
@@ -334,10 +333,11 @@ function mapearCamposDinamicos(obj) {
   const regexNombreGen = /nombre|completo|asistente|persona|invitado/i;
   const regexEmail = /correo|email|mail|direccion/i;
   const regexPago = /doct.*pago|comprobante/i;
-  const regexMetodoPago = /pago/i;
+  const regexIgnorarPago = /pago/i;
 
   Object.keys(obj).forEach(key => {
     if (key === "fila") return;
+    if (/^_+$/.test(key) || /^fecha$/i.test(key)) return;
 
     const valorStr = obj[key] ? obj[key].toString().trim() : "";
 
@@ -371,8 +371,8 @@ function mapearCamposDinamicos(obj) {
       if (valorStr !== "") {
         pagado = true;
       }
-    } else if (regexMetodoPago.test(key)) {
-      // Columnas de método de pago (FORMA DE PAGO, MEDIO DE PAGO) — ignorar en detalles
+    } else if (regexIgnorarPago.test(key)) {
+      // Columnas con "pago" que no son comprobante (FORMA DE PAGO, MEDIO DE PAGO, etc.) — ignorar
     } else {
       if (valorStr) {
         const label = key.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
