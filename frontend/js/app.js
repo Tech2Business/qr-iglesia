@@ -334,7 +334,7 @@ function mapearCamposDinamicos(obj) {
   const regexNombreGen = /nombre|completo|asistente|persona|invitado/i;
   const regexEmail = /correo|email|mail|direccion/i;
   const regexPago = /doct.*pago|comprobante/i;
-  const regexMetodoPago = /forma.*pago|medio.*pago/i;
+  const regexMetodoPago = /pago/i;
 
   Object.keys(obj).forEach(key => {
     if (key === "fila") return;
