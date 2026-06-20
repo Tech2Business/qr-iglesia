@@ -334,6 +334,7 @@ function mapearCamposDinamicos(obj) {
   const regexNombreGen = /nombre|completo|asistente|persona|invitado/i;
   const regexEmail = /correo|email|mail|direccion/i;
   const regexPago = /doct.*pago|comprobante/i;
+  const regexMetodoPago = /forma.*pago|medio.*pago/i;
 
   Object.keys(obj).forEach(key => {
     if (key === "fila") return;
@@ -370,6 +371,8 @@ function mapearCamposDinamicos(obj) {
       if (valorStr !== "") {
         pagado = true;
       }
+    } else if (regexMetodoPago.test(key)) {
+      // Columnas de método de pago (FORMA DE PAGO, MEDIO DE PAGO) — ignorar en detalles
     } else {
       if (valorStr) {
         const label = key.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
