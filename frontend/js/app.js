@@ -232,6 +232,7 @@ function integrarYMostrar() {
     
     // Encontrar nombres, teléfonos y pago analizando cabeceras dinámicamente
     const infoMapeada = mapearCamposDinamicos(persona);
+    if (infoMapeada.pagado) console.log("DEBUG PAGADO:", JSON.stringify(persona));
 
     // Omitir filas vacías, de cabecera secundaria o de resumen sin nombres válidos
     if (!infoMapeada.nombre || infoMapeada.nombre === "Sin Nombre" || infoMapeada.nombre.trim() === "") {
@@ -332,7 +333,7 @@ function mapearCamposDinamicos(obj) {
   const regexEsposa = /esposa/i;
   const regexNombreGen = /nombre|completo|asistente|persona|invitado/i;
   const regexEmail = /correo|email|mail|direccion/i;
-  const regexPago = /doct|pago|comprobante/i;
+  const regexPago = /doct.*pago|comprobante/i;
 
   Object.keys(obj).forEach(key => {
     if (key === "fila") return;
